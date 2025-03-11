@@ -97,14 +97,28 @@ function ThinkingIndicator({
 function StreamingDisplay({ 
   content, 
   model, 
-  isComplete 
+  isComplete,
+  usageData
 }: { 
   content: string; 
   model: string; 
-  isComplete: boolean 
+  isComplete: boolean;
+  usageData: any | null;
 }) {
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [parsedJson, setParsedJson] = useState<any>(null);
+  
+  // Format number with commas
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString();
+  };
+  
+  // Format currency to 5 decimal places for USD and 2 for INR
+  const formatCurrency = (num: number, currency: 'USD' | 'INR'): string => {
+    return currency === 'USD' 
+      ? `$${num.toFixed(5)}` 
+      : `₹${num.toFixed(2)}`;
+  };
   
   // Try to parse the JSON content when streaming is complete
   useEffect(() => {
@@ -145,6 +159,59 @@ function StreamingDisplay({
         </div>
       </div>
       
+      {/* Token Usage and Cost Information */}
+      {isComplete && usageData && (
+        <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
+          <h3 className="text-md font-medium mb-3">Token Usage and Cost:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Token Information */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">Tokens:</h4>
+              <div className="grid grid-cols-2 gap-1 text-sm">
+                <div className="text-slate-500">Input:</div>
+                <div>{formatNumber(usageData.prompt_tokens)}</div>
+                
+                <div className="text-slate-500">Output:</div>
+                <div>{formatNumber(usageData.completion_tokens)}</div>
+                
+                <div className="text-slate-500 font-medium">Total:</div>
+                <div className="font-medium">{formatNumber(usageData.total_tokens)}</div>
+              </div>
+            </div>
+            
+            {/* USD Cost */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">Cost (USD):</h4>
+              <div className="grid grid-cols-2 gap-1 text-sm">
+                <div className="text-slate-500">Input:</div>
+                <div>{formatCurrency(usageData.cost_usd.input, 'USD')}</div>
+                
+                <div className="text-slate-500">Output:</div>
+                <div>{formatCurrency(usageData.cost_usd.output, 'USD')}</div>
+                
+                <div className="text-slate-500 font-medium">Total:</div>
+                <div className="font-medium">{formatCurrency(usageData.cost_usd.total, 'USD')}</div>
+              </div>
+            </div>
+            
+            {/* INR Cost */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">Cost (INR):</h4>
+              <div className="grid grid-cols-2 gap-1 text-sm">
+                <div className="text-slate-500">Input:</div>
+                <div>{formatCurrency(usageData.cost_inr.input, 'INR')}</div>
+                
+                <div className="text-slate-500">Output:</div>
+                <div>{formatCurrency(usageData.cost_inr.output, 'INR')}</div>
+                
+                <div className="text-slate-500 font-medium">Total:</div>
+                <div className="font-medium">{formatCurrency(usageData.cost_inr.total, 'INR')}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {isComplete && parsedJson && (
         <div>
           <h3 className="text-md font-medium mb-2">Parsed JSON:</h3>
@@ -166,6 +233,8 @@ type ModelInfo = {
   tokenLimit: number;
   outputLimit: number;
   family: string;
+  inputPrice?: number;  // USD per 1K tokens
+  outputPrice?: number; // USD per 1K tokens
 };
 
 type TokenUsage = {
@@ -206,6 +275,45 @@ const availableModels = [
   { label: 'GPT-3.5 Turbo Instruct', value: 'gpt-3.5-turbo-instruct', category: 'GPT-3.5' },
 ];
 
+// Helper functions for formatting
+const formatNumber = (num: number | undefined): string => {
+  if (num === undefined) return '0';
+  return num.toLocaleString();
+};
+
+const formatCurrency = (num: number | undefined, currency: 'USD' | 'INR'): string => {
+  if (num === undefined) return currency === 'USD' ? '$0.00000' : '₹0.00';
+  return currency === 'USD' 
+    ? `$${num.toFixed(5)}` 
+    : `₹${num.toFixed(2)}`;
+};
+
+// Calculate costs based on usage and model info
+const calculateCosts = (usage: TokenUsage | undefined, modelInfo: ModelInfo | undefined) => {
+  if (!usage || !modelInfo) {
+    return {
+      usd: { input: 0, output: 0, total: 0 },
+      inr: { input: 0, output: 0, total: 0 }
+    };
+  }
+  
+  // USD costs
+  const inputCostUsd = (usage.prompt_tokens / 1000) * (modelInfo.inputPrice || 0);
+  const outputCostUsd = (usage.completion_tokens / 1000) * (modelInfo.outputPrice || 0);
+  const totalCostUsd = inputCostUsd + outputCostUsd;
+  
+  // INR costs (using fixed exchange rate)
+  const usdToInr = 83.34;
+  const inputCostInr = inputCostUsd * usdToInr;
+  const outputCostInr = outputCostUsd * usdToInr;
+  const totalCostInr = totalCostUsd * usdToInr;
+  
+  return {
+    usd: { input: inputCostUsd, output: outputCostUsd, total: totalCostUsd },
+    inr: { input: inputCostInr, output: outputCostInr, total: totalCostInr }
+  };
+};
+
 export default function LlmTestingInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
@@ -223,6 +331,7 @@ export default function LlmTestingInterface() {
     content: streamingContent, 
     isLoading: isStreaming, 
     error: streamingError,
+    usageData: streamingUsageData,
     startStreaming
   } = useStreamingResponse();
 
@@ -452,6 +561,7 @@ export default function LlmTestingInterface() {
                     content={streamingContent}
                     model={selectedModels[0] ? availableModels.find(m => m.value === selectedModels[0])?.label || selectedModels[0] : 'Unknown'}
                     isComplete={streamingStage === 'complete'}
+                    usageData={streamingUsageData}
                   />
                   
                   {streamingError && (
@@ -503,6 +613,67 @@ export default function LlmTestingInterface() {
                       <CardContent>
                         {result.success ? (
                           <div className="space-y-4">
+                            {/* Add token usage and cost panel */}
+                            {result.usage && result.modelInfo && (
+                              <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 mb-4">
+                                <h3 className="text-md font-medium mb-3">Token Usage and Cost:</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  {/* Token Information */}
+                                  <div className="space-y-2">
+                                    <h4 className="text-sm font-semibold">Tokens:</h4>
+                                    <div className="grid grid-cols-2 gap-1 text-sm">
+                                      <div className="text-slate-500">Input:</div>
+                                      <div>{formatNumber(result.usage.prompt_tokens)}</div>
+                                      
+                                      <div className="text-slate-500">Output:</div>
+                                      <div>{formatNumber(result.usage.completion_tokens)}</div>
+                                      
+                                      <div className="text-slate-500 font-medium">Total:</div>
+                                      <div className="font-medium">{formatNumber(result.usage.total_tokens)}</div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Calculate costs */}
+                                  {(() => {
+                                    const costs = calculateCosts(result.usage, result.modelInfo);
+                                    return (
+                                      <>
+                                        {/* USD Cost */}
+                                        <div className="space-y-2">
+                                          <h4 className="text-sm font-semibold">Cost (USD):</h4>
+                                          <div className="grid grid-cols-2 gap-1 text-sm">
+                                            <div className="text-slate-500">Input:</div>
+                                            <div>{formatCurrency(costs.usd.input, 'USD')}</div>
+                                            
+                                            <div className="text-slate-500">Output:</div>
+                                            <div>{formatCurrency(costs.usd.output, 'USD')}</div>
+                                            
+                                            <div className="text-slate-500 font-medium">Total:</div>
+                                            <div className="font-medium">{formatCurrency(costs.usd.total, 'USD')}</div>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* INR Cost */}
+                                        <div className="space-y-2">
+                                          <h4 className="text-sm font-semibold">Cost (INR):</h4>
+                                          <div className="grid grid-cols-2 gap-1 text-sm">
+                                            <div className="text-slate-500">Input:</div>
+                                            <div>{formatCurrency(costs.inr.input, 'INR')}</div>
+                                            
+                                            <div className="text-slate-500">Output:</div>
+                                            <div>{formatCurrency(costs.inr.output, 'INR')}</div>
+                                            
+                                            <div className="text-slate-500 font-medium">Total:</div>
+                                            <div className="font-medium">{formatCurrency(costs.inr.total, 'INR')}</div>
+                                          </div>
+                                        </div>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            )}
+                            
                             <div>
                               <h4 className="text-sm font-medium mb-2">Parsed JSON Response:</h4>
                               <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md overflow-auto max-h-96 text-sm">

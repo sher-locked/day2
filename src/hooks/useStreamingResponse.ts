@@ -6,15 +6,56 @@ type StreamingOptions = {
   streaming: boolean;
 };
 
+// Define types for usage data
+type CostData = {
+  input: number;
+  output: number;
+  total: number;
+};
+
+type UsageData = {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cost_usd: CostData;
+  cost_inr: CostData;
+};
+
 export function useStreamingResponse() {
   const [content, setContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [usageData, setUsageData] = useState<UsageData | null>(null);
 
   // Function to reset state for a new streaming session
   const reset = useCallback(() => {
     setContent('');
     setError(null);
+    setUsageData(null);
+  }, []);
+
+  // Function to extract usage data from content if it exists
+  const extractUsageData = useCallback((text: string): { content: string; usageData: UsageData | null } => {
+    const usageMarker = "\n\n__USAGE_DATA__";
+    const markerIndex = text.indexOf(usageMarker);
+    
+    if (markerIndex === -1) {
+      return { content: text, usageData: null };
+    }
+    
+    const contentPart = text.substring(0, markerIndex);
+    const usageDataJson = text.substring(markerIndex + usageMarker.length);
+    
+    try {
+      const parsedData = JSON.parse(usageDataJson);
+      return { 
+        content: contentPart, 
+        usageData: parsedData.__usage 
+      };
+    } catch (e) {
+      console.error('Failed to parse usage data:', e);
+      return { content: contentPart, usageData: null };
+    }
   }, []);
 
   // Main function to start streaming
@@ -64,14 +105,25 @@ export function useStreamingResponse() {
           // Decode and process chunk
           const chunk = decoder.decode(value, { stream: true });
           accumulatedContent += chunk;
-          setContent(accumulatedContent);
+          
+          // Extract usage data if present, but only update content
+          const { content, usageData } = extractUsageData(accumulatedContent);
+          setContent(content);
+          if (usageData) {
+            setUsageData(usageData);
+          }
         }
 
         // Ensure we have the complete content
         const finalChunk = decoder.decode();
         if (finalChunk) {
           accumulatedContent += finalChunk;
-          setContent(accumulatedContent);
+          // Extract final usage data
+          const { content, usageData } = extractUsageData(accumulatedContent);
+          setContent(content);
+          if (usageData) {
+            setUsageData(usageData);
+          }
         }
 
         // Signal that streaming has ended
@@ -83,13 +135,14 @@ export function useStreamingResponse() {
         setIsLoading(false);
       }
     },
-    [reset]
+    [reset, extractUsageData]
   );
 
   return {
     content,
     isLoading,
     error,
+    usageData,
     startStreaming,
     reset,
   };

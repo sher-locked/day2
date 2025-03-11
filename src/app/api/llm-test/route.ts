@@ -9,31 +9,33 @@ type ModelInfo = {
   tokenLimit: number;
   outputLimit: number;
   family: string;
+  inputPrice: number;  // USD per 1K tokens
+  outputPrice: number; // USD per 1K tokens
 };
 
 type ModelInfoMap = {
   [key: string]: ModelInfo;
 };
 
-// Model information for reference and token limits
+// Model information for reference, token limits, and pricing (USD per 1K tokens)
 const MODEL_INFO: ModelInfoMap = {
   // GPT-4 models
-  'gpt-4o': { tokenLimit: 128000, outputLimit: 16384, family: 'GPT-4' },
-  'gpt-4o-mini': { tokenLimit: 128000, outputLimit: 16384, family: 'GPT-4' },
-  'gpt-4-turbo': { tokenLimit: 128000, outputLimit: 4096, family: 'GPT-4' },
-  'gpt-4': { tokenLimit: 8192, outputLimit: 4096, family: 'GPT-4' },
-  'gpt-4-0613': { tokenLimit: 8192, outputLimit: 4096, family: 'GPT-4' },
-  'gpt-4-0314': { tokenLimit: 8192, outputLimit: 4096, family: 'GPT-4' },
-  'gpt-4-32k': { tokenLimit: 32768, outputLimit: 4096, family: 'GPT-4' },
-  'gpt-4-32k-0613': { tokenLimit: 32768, outputLimit: 4096, family: 'GPT-4' },
+  'gpt-4o': { tokenLimit: 128000, outputLimit: 16384, family: 'GPT-4', inputPrice: 0.005, outputPrice: 0.015 },
+  'gpt-4o-mini': { tokenLimit: 128000, outputLimit: 16384, family: 'GPT-4', inputPrice: 0.0015, outputPrice: 0.0060 },
+  'gpt-4-turbo': { tokenLimit: 128000, outputLimit: 4096, family: 'GPT-4', inputPrice: 0.01, outputPrice: 0.03 },
+  'gpt-4': { tokenLimit: 8192, outputLimit: 4096, family: 'GPT-4', inputPrice: 0.03, outputPrice: 0.06 },
+  'gpt-4-0613': { tokenLimit: 8192, outputLimit: 4096, family: 'GPT-4', inputPrice: 0.03, outputPrice: 0.06 },
+  'gpt-4-0314': { tokenLimit: 8192, outputLimit: 4096, family: 'GPT-4', inputPrice: 0.03, outputPrice: 0.06 },
+  'gpt-4-32k': { tokenLimit: 32768, outputLimit: 4096, family: 'GPT-4', inputPrice: 0.06, outputPrice: 0.12 },
+  'gpt-4-32k-0613': { tokenLimit: 32768, outputLimit: 4096, family: 'GPT-4', inputPrice: 0.06, outputPrice: 0.12 },
   
   // GPT-3.5 models
-  'gpt-3.5-turbo': { tokenLimit: 4096, outputLimit: 4096, family: 'GPT-3.5' },
-  'gpt-3.5-turbo-0125': { tokenLimit: 16385, outputLimit: 4096, family: 'GPT-3.5' },
-  'gpt-3.5-turbo-1106': { tokenLimit: 16385, outputLimit: 4096, family: 'GPT-3.5' },
-  'gpt-3.5-turbo-0613': { tokenLimit: 4096, outputLimit: 4096, family: 'GPT-3.5' },
-  'gpt-3.5-turbo-16k': { tokenLimit: 16384, outputLimit: 4096, family: 'GPT-3.5' },
-  'gpt-3.5-turbo-instruct': { tokenLimit: 4097, outputLimit: 4097, family: 'GPT-3.5' },
+  'gpt-3.5-turbo': { tokenLimit: 4096, outputLimit: 4096, family: 'GPT-3.5', inputPrice: 0.0005, outputPrice: 0.0015 },
+  'gpt-3.5-turbo-0125': { tokenLimit: 16385, outputLimit: 4096, family: 'GPT-3.5', inputPrice: 0.0005, outputPrice: 0.0015 },
+  'gpt-3.5-turbo-1106': { tokenLimit: 16385, outputLimit: 4096, family: 'GPT-3.5', inputPrice: 0.001, outputPrice: 0.002 },
+  'gpt-3.5-turbo-0613': { tokenLimit: 4096, outputLimit: 4096, family: 'GPT-3.5', inputPrice: 0.001, outputPrice: 0.002 },
+  'gpt-3.5-turbo-16k': { tokenLimit: 16384, outputLimit: 4096, family: 'GPT-3.5', inputPrice: 0.001, outputPrice: 0.002 },
+  'gpt-3.5-turbo-instruct': { tokenLimit: 4097, outputLimit: 4097, family: 'GPT-3.5', inputPrice: 0.0015, outputPrice: 0.002 },
 };
 
 // Non-streaming version of the API
@@ -198,7 +200,9 @@ async function handleStreamingRequest(prompt: string, model: string) {
     const modelInfo = MODEL_INFO[model] || { 
       tokenLimit: 4096, 
       outputLimit: 4096,
-      family: 'Unknown' 
+      family: 'Unknown',
+      inputPrice: 0.01,
+      outputPrice: 0.01
     };
     
     // Create a custom streaming response
@@ -224,13 +228,55 @@ async function handleStreamingRequest(prompt: string, model: string) {
             stream: true,
           });
           
+          let completionTokens = 0;
+          let responseContent = '';
+          
           // Handle the streaming response
           for await (const chunk of streamResponse) {
             const content = chunk.choices[0]?.delta?.content || '';
             if (content) {
+              responseContent += content;
+              completionTokens += estimateTokens(content);
               controller.enqueue(encoder.encode(content));
             }
           }
+          
+          // Get approximate token count for the prompt
+          const promptTokens = estimateTokens(prompt);
+          const totalTokens = promptTokens + completionTokens;
+          
+          // Calculate cost in USD
+          const inputCost = (promptTokens / 1000) * modelInfo.inputPrice;
+          const outputCost = (completionTokens / 1000) * modelInfo.outputPrice;
+          const totalCost = inputCost + outputCost;
+          
+          // Convert to INR (using a standard conversion rate - can be updated to fetch real-time rates)
+          const usdToInr = 83.34; // Average rate as of 2023
+          const totalCostInr = totalCost * usdToInr;
+          
+          // Send token usage data as a special marker at the end
+          const usageData = {
+            __usage: {
+              prompt_tokens: promptTokens,
+              completion_tokens: completionTokens,
+              total_tokens: totalTokens,
+              cost_usd: {
+                input: inputCost,
+                output: outputCost,
+                total: totalCost
+              },
+              cost_inr: {
+                input: inputCost * usdToInr,
+                output: outputCost * usdToInr,
+                total: totalCostInr
+              }
+            }
+          };
+          
+          // Add a special marker to indicate this is usage data
+          const usageMarker = "\n\n__USAGE_DATA__" + JSON.stringify(usageData);
+          controller.enqueue(encoder.encode(usageMarker));
+          
           controller.close();
         } catch (error) {
           console.error('Stream error:', error);
@@ -254,4 +300,11 @@ async function handleStreamingRequest(prompt: string, model: string) {
       { status: 500 }
     );
   }
+}
+
+// Simple function to estimate tokens (very approximate)
+function estimateTokens(text: string): number {
+  if (!text) return 0;
+  // A very simple approximation: about 4 characters per token for English text
+  return Math.ceil(text.length / 4);
 } 
