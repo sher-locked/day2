@@ -16,10 +16,83 @@ import { ThinkingIndicator } from '@/components/LlmTesting/ThinkingIndicator';
 import { StreamingDisplay } from '@/components/LlmTesting/StreamingDisplay';
 import { ModelSelector } from '@/components/LlmTesting/ModelSelector';
 
+const DEFAULT_PRODUCT_PROMPT = `# Communication Enhancement Analyzer
+
+**Role**:  
+"You're an expert editor. Analyze the user's text below and provide structured feedback in JSON format using this framework:"
+
+### **User Input**  
+"[PASTE USER'S TEXT HERE]"  
+
+---
+
+### **Output Format**  
+Return a valid JSON object with the following structure:
+
+\`\`\`json
+{
+  "summaryDashboard": {
+    "storytellingRating": "Strong|Good|Weak",
+    "reasoningRating": "Strong|Good|Weak",
+    "priorityFocus": "string"
+  },
+  "storytellingAnalysis": {
+    "setup": {
+      "content": "string",
+      "rating": "Great|Good|Weak",
+      "feedback": "string"
+    },
+    "conflict": {
+      "content": "string",
+      "rating": "Great|Good|Weak",
+      "feedback": "string"
+    },
+    "resolution": {
+      "content": "string",
+      "rating": "Great|Good|Weak",
+      "feedback": "string"
+    },
+    "overallRating": "Great|Good|Weak",
+    "topSuggestion": "string"
+  },
+  "reasoningAnalysis": {
+    "premise": {
+      "content": "string",
+      "rating": "Great|Good|Weak",
+      "feedback": "string"
+    },
+    "evidence": {
+      "content": "string",
+      "rating": "Great|Good|Weak",
+      "feedback": "string"
+    },
+    "conclusion": {
+      "content": "string",
+      "rating": "Great|Good|Weak",
+      "feedback": "string"
+    },
+    "overallRating": "Great|Good|Weak",
+    "topSuggestion": "string"
+  },
+  "notes": {
+    "grammarErrors": ["string"],
+    "biases": ["string"],
+    "jargonComplexity": ["string"]
+  },
+  "suggestedImprovements": ["string", "string", "string"]
+}
+\`\`\`
+
+**Rules**:  
+- Return valid, properly formatted JSON
+- Start with strengths
+- Link feedback to specific text quotes
+- For Weak ratings, provide concrete examples`;
+
 export function LlmTestingInterface() {
   // State for form inputs
-  const [prompt, setPrompt] = useState('');
-  const [systemMessage, setSystemMessage] = useState('You are a helpful assistant.');
+  const [userPrompt, setUserPrompt] = useState('');
+  const [productPrompt, setProductPrompt] = useState(DEFAULT_PRODUCT_PROMPT);
   const [selectedModel, setSelectedModel] = useState(availableModels[0]?.value || 'gpt-4');
   const [startTime, setStartTime] = useState(Date.now());
   const [estimatedTokensForInput, setEstimatedTokensForInput] = useState(0);
@@ -42,13 +115,15 @@ export function LlmTestingInterface() {
       // Completion callback if needed
     }
   });
+
+  // Generate the combined prompt (product prompt + user input)
+  const combinedPrompt = productPrompt.replace('[PASTE USER\'S TEXT HERE]', userPrompt);
   
   // Update token estimation when inputs change
   useEffect(() => {
-    const totalText = prompt + systemMessage;
-    const estimatedTokenCount = estimateTokens(totalText);
+    const estimatedTokenCount = estimateTokens(combinedPrompt);
     setEstimatedTokensForInput(estimatedTokenCount);
-  }, [prompt, systemMessage]);
+  }, [userPrompt, productPrompt, combinedPrompt]);
   
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,10 +138,10 @@ export function LlmTestingInterface() {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        prompt,
+        prompt: userPrompt,
         selectedModels: [selectedModel],
         streaming: true,
-        systemMessage
+        systemMessage: productPrompt
       })
     });
   };
@@ -74,44 +149,29 @@ export function LlmTestingInterface() {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">LLM Testing Platform</h1>
+        <h1 className="text-2xl font-bold">Communication Enhancement Analyzer</h1>
       </div>
       
-      <Tabs defaultValue="chat" className="w-full">
+      <Tabs defaultValue="input" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="chat">Chat Interface</TabsTrigger>
-          <TabsTrigger value="raw">Raw Prompt</TabsTrigger>
+          <TabsTrigger value="input">Input</TabsTrigger>
+          <TabsTrigger value="final-prompt">Final Prompt</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="chat" className="space-y-6">
+        <TabsContent value="input" className="space-y-6">
           {/* Input form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <Card>
               <CardContent className="pt-6 space-y-6">
-                {/* System message input */}
+                {/* Hero User Prompt input */}
                 <div className="space-y-2">
-                  <Label htmlFor="system-message">System Message</Label>
+                  <Label htmlFor="user-prompt" className="text-lg font-medium">Enter Your Text</Label>
                   <Textarea
-                    id="system-message"
-                    value={systemMessage}
-                    onChange={(e) => setSystemMessage(e.target.value)}
-                    className="h-24"
-                    placeholder="System instructions for the assistant..."
-                  />
-                  <p className="text-xs text-slate-500">
-                    Note: For JSON responses, your system message should include the word "json". If not included, it will be added automatically.
-                  </p>
-                </div>
-                
-                {/* User prompt input */}
-                <div className="space-y-2">
-                  <Label htmlFor="prompt">User Prompt</Label>
-                  <Textarea
-                    id="prompt"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    className="h-36"
-                    placeholder="Enter your prompt here..."
+                    id="user-prompt"
+                    value={userPrompt}
+                    onChange={(e) => setUserPrompt(e.target.value)}
+                    className="h-60 text-base"
+                    placeholder="Paste your text here for feedback and analysis..."
                     disabled={isLoading}
                   />
                   
@@ -126,6 +186,23 @@ export function LlmTestingInterface() {
                   </div>
                 </div>
                 
+                {/* Product Prompt (collapsed by default) */}
+                <details className="text-sm border rounded-md p-2">
+                  <summary className="cursor-pointer font-medium text-slate-600">Advanced: Edit Product Prompt</summary>
+                  <div className="mt-3 space-y-2">
+                    <Label htmlFor="product-prompt" className="text-xs">Product Prompt</Label>
+                    <Textarea
+                      id="product-prompt"
+                      value={productPrompt}
+                      onChange={(e) => setProductPrompt(e.target.value)}
+                      className="h-32 text-xs font-mono"
+                    />
+                    <p className="text-xs text-slate-500">
+                      This is the system instruction that guides the AI's response. Edit with caution.
+                    </p>
+                  </div>
+                </details>
+                
                 {/* Model selector */}
                 <ModelSelector 
                   selectedModel={selectedModel}
@@ -137,10 +214,10 @@ export function LlmTestingInterface() {
                 <div className="flex justify-end">
                   <Button 
                     type="submit" 
-                    disabled={isLoading || !prompt.trim()}
+                    disabled={isLoading || !userPrompt.trim()}
                     className="w-full sm:w-auto"
                   >
-                    {isLoading ? 'Processing...' : 'Generate Response'}
+                    {isLoading ? 'Analyzing...' : 'Analyze Text'}
                   </Button>
                 </div>
               </CardContent>
@@ -181,26 +258,24 @@ export function LlmTestingInterface() {
           )}
         </TabsContent>
         
-        <TabsContent value="raw" className="space-y-6">
-          {/* Raw prompt interface */}
+        <TabsContent value="final-prompt" className="space-y-6">
+          {/* Final combined prompt (read-only) */}
           <Card>
             <CardContent className="pt-6 space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="raw-prompt">Raw Prompt</Label>
+                <Label htmlFor="final-prompt">Final Prompt (sent to the LLM)</Label>
                 <Textarea
-                  id="raw-prompt"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  className="h-96"
-                  placeholder="Enter your raw prompt here..."
-                  disabled={isLoading}
+                  id="final-prompt"
+                  value={combinedPrompt}
+                  className="h-96 font-mono text-sm"
+                  readOnly
                 />
                 
                 {/* Token estimation */}
                 <div className="flex justify-between text-xs text-slate-500">
-                  <span>Estimated tokens: {formatNumber(estimateTokens(prompt))}</span>
+                  <span>Estimated tokens: {formatNumber(estimatedTokensForInput)}</span>
                   {modelInfo && (
-                    <span className={estimateTokens(prompt) > modelInfo.tokenLimit ? 'text-red-500 font-medium' : ''}>
+                    <span className={estimatedTokensForInput > modelInfo.tokenLimit ? 'text-red-500 font-medium' : ''}>
                       Max input tokens: {formatNumber(modelInfo.tokenLimit)}
                     </span>
                   )}
@@ -217,10 +292,10 @@ export function LlmTestingInterface() {
               <div className="flex justify-end">
                 <Button 
                   onClick={handleSubmit} 
-                  disabled={isLoading || !prompt.trim()}
+                  disabled={isLoading || !userPrompt.trim()}
                   className="w-full sm:w-auto"
                 >
-                  {isLoading ? 'Processing...' : 'Generate Response'}
+                  {isLoading ? 'Analyzing...' : 'Analyze Text'}
                 </Button>
               </div>
             </CardContent>
