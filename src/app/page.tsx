@@ -1,4 +1,4 @@
-import LlmTestingInterface from '@/components/LlmTestingInterface';
+import { LlmTestingInterface } from '@/components/LlmTestingInterface';
 
 export default function Home() {
   return (

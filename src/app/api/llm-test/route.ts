@@ -44,12 +44,13 @@ export async function POST(req: Request) {
     console.log('API route called');
     
     const body = await req.json();
-    const { prompt, selectedModels, streaming = false } = body;
+    const { prompt, selectedModels, streaming = false, systemMessage } = body;
 
     console.log('Request body:', { 
       prompt: prompt?.substring(0, 50) + '...', 
       selectedModels,
-      streaming 
+      streaming,
+      hasSystemMessage: !!systemMessage
     });
 
     if (!prompt || !selectedModels || !Array.isArray(selectedModels) || selectedModels.length === 0) {
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
 
     // Check for streaming mode
     if (streaming && selectedModels.length === 1) {
-      return handleStreamingRequest(prompt, selectedModels[0]);
+      return handleStreamingRequest(prompt, selectedModels[0], systemMessage);
     }
 
     // Validate model names against our valid models list
@@ -127,7 +128,7 @@ export async function POST(req: Request) {
             let parsedJson;
             try {
               parsedJson = JSON.parse(result || '{}');
-            } catch (e) {
+            } catch (_error) {
               console.error(`Model ${model} didn't return valid JSON:`, result);
               // If JSON parsing fails, return the error
               return {
@@ -184,7 +185,7 @@ export async function POST(req: Request) {
 }
 
 // Simple manual streaming implementation
-async function handleStreamingRequest(prompt: string, model: string) {
+async function handleStreamingRequest(prompt: string, model: string, systemMessage: string | null) {
   try {
     console.log(`Streaming request for model: ${model}`);
     
@@ -216,7 +217,7 @@ async function handleStreamingRequest(prompt: string, model: string) {
             messages: [
               {
                 role: 'system',
-                content: 'You are an assistant that always responds in JSON format. Your response should be a valid JSON object.'
+                content: systemMessage || 'You are an assistant that always responds in JSON format. Your response should be a valid JSON object.'
               },
               {
                 role: 'user',
@@ -229,13 +230,11 @@ async function handleStreamingRequest(prompt: string, model: string) {
           });
           
           let completionTokens = 0;
-          let responseContent = '';
           
           // Handle the streaming response
           for await (const chunk of streamResponse) {
             const content = chunk.choices[0]?.delta?.content || '';
             if (content) {
-              responseContent += content;
               completionTokens += estimateTokens(content);
               controller.enqueue(encoder.encode(content));
             }
