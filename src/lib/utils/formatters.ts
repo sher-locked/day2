@@ -8,14 +8,25 @@ export function formatNumber(num: number | undefined): string {
 
 /**
  * Format currency to appropriate decimal places
- * USD: 5 decimal places
- * INR: 2 decimal places
+ * @param num The number to format
+ * @param currency The currency code ('USD' or 'INR')
+ * @param decimals Optional number of decimal places (defaults to 5 for USD, 2 for INR)
  */
-export function formatCurrency(num: number | undefined, currency: 'USD' | 'INR'): string {
-  if (num === undefined) return currency === 'USD' ? '$0.00000' : '₹0.00';
+export function formatCurrency(
+  num: number | undefined, 
+  currency: 'USD' | 'INR',
+  decimals?: number
+): string {
+  if (num === undefined) return currency === 'USD' ? '$0.00' : '₹0.00';
+  
+  // Default decimal places: 5 for USD, 2 for INR
+  const decimalPlaces = decimals !== undefined 
+    ? decimals 
+    : (currency === 'USD' ? 5 : 2);
+  
   return currency === 'USD' 
-    ? `$${num.toFixed(5)}` 
-    : `₹${num.toFixed(2)}`;
+    ? `$${num.toFixed(decimalPlaces)}` 
+    : `₹${num.toFixed(decimalPlaces)}`;
 }
 
 /**

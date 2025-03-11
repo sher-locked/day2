@@ -7,8 +7,18 @@ A Next.js application for testing different LLMs' responses to prompts that shou
 - Test multiple LLMs with a single prompt
 - Compare JSON responses side-by-side
 - Visual indicators for successful and failed responses
-- Supports OpenAI models (GPT-4, GPT-3.5 Turbo) and Anthropic models (Claude 3 series)
+- Comprehensive multi-provider support:
+  - **OpenAI Models**:
+    - GPT-4o models (all variants including dated versions)
+    - GPT-4 and GPT-4 Turbo models
+    - GPT-3.5 Turbo models
+  - **Anthropic Models**:
+    - O-Series reasoning models (O1, O1-mini, O3-mini)
+    - Claude 3.5 Sonnet
+    - Claude 3 Opus, Sonnet, and Haiku
+- Enhanced UI with provider logos and model family categorization
 - User Mode and Developer Mode for different user experiences
+- Pricing information in both USD and INR
 
 ## Tech Stack
 
@@ -128,7 +138,7 @@ The application uses React's built-in state management with custom hooks:
 
 ## Extending
 
-To add support for additional LLM providers:
+The platform already supports OpenAI and Anthropic models out of the box. To add support for additional LLM providers:
 
 1. Install the relevant API client:
    ```bash
@@ -136,7 +146,10 @@ To add support for additional LLM providers:
    ```
 
 2. Update the API route in `src/app/api/llm-test/route.ts` to include the new provider
-3. Add the new models to the `availableModels` array in `src/components/LlmTestingInterface.tsx`
+3. Add the new models to the `MODEL_INFO` object in `src/lib/constants/modelInfo.ts`
+4. Add the models to the `availableModels` array in the same file
+5. Update the `ModelSelector.tsx` component to display the new provider's models
+6. Add the provider's logo to the `public/images` directory
 
 ## License
 
