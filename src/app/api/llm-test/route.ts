@@ -101,20 +101,30 @@ export async function POST(req: Request) {
             // GPT-3.5 Turbo Instruct doesn't support response_format
             const supportsJsonFormat = !model.includes('instruct');
 
+            // Determine system message and JSON format usage
+            let finalSystemMessage = systemMessage || 'You are a helpful assistant.';
+            let useJsonFormat = supportsJsonFormat;
+            
+            // If using JSON format, ensure system message contains "json"
+            if (useJsonFormat && !finalSystemMessage.toLowerCase().includes('json')) {
+              console.log('System message does not contain "json", appending JSON instructions');
+              finalSystemMessage += ' Please respond in valid JSON format.';
+            }
+
             // Request JSON output from the model using completion approach
             const response = await openai.chat.completions.create({
               model,
               messages: [
                 {
                   role: 'system',
-                  content: 'You are an assistant that always responds in JSON format. Your response should be a valid JSON object.'
+                  content: finalSystemMessage
                 },
                 {
                   role: 'user',
                   content: prompt
                 }
               ],
-              ...(supportsJsonFormat && { response_format: { type: 'json_object' } }),
+              ...(useJsonFormat && { response_format: { type: 'json_object' } }),
               max_tokens: modelInfo.outputLimit,
             });
 
@@ -211,20 +221,31 @@ async function handleStreamingRequest(prompt: string, model: string, systemMessa
     const customStream = new ReadableStream({
       async start(controller) {
         try {
+          // Determine if we need to use JSON response format
+          // and ensure system message contains "json" if using JSON format
+          let finalSystemMessage = systemMessage || 'You are a helpful assistant.';
+          let useJsonFormat = supportsJsonFormat;
+          
+          // If using JSON format, ensure system message contains "json"
+          if (useJsonFormat && !finalSystemMessage.toLowerCase().includes('json')) {
+            console.log('System message does not contain "json", appending JSON instructions');
+            finalSystemMessage += ' Please respond in valid JSON format.';
+          }
+          
           // Create the OpenAI streaming request
           const streamResponse = await openai.chat.completions.create({
             model,
             messages: [
               {
                 role: 'system',
-                content: systemMessage || 'You are an assistant that always responds in JSON format. Your response should be a valid JSON object.'
+                content: finalSystemMessage
               },
               {
                 role: 'user',
                 content: prompt
               }
             ],
-            ...(supportsJsonFormat && { response_format: { type: 'json_object' } }),
+            ...(useJsonFormat && { response_format: { type: 'json_object' } }),
             max_tokens: modelInfo.outputLimit,
             stream: true,
           });

@@ -98,6 +98,9 @@ export function LlmTestingInterface() {
                     className="h-24"
                     placeholder="System instructions for the assistant..."
                   />
+                  <p className="text-xs text-slate-500">
+                    Note: For JSON responses, your system message should include the word "json". If not included, it will be added automatically.
+                  </p>
                 </div>
                 
                 {/* User prompt input */}
