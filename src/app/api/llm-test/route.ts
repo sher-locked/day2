@@ -1,5 +1,6 @@
 import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
+import { StreamingTextResponse } from 'ai';
 
 // Set the runtime environment
 export const runtime = 'edge';
@@ -36,14 +37,19 @@ const MODEL_INFO: ModelInfoMap = {
   'gpt-3.5-turbo-instruct': { tokenLimit: 4097, outputLimit: 4097, family: 'GPT-3.5' },
 };
 
+// Non-streaming version of the API
 export async function POST(req: Request) {
   try {
     console.log('API route called');
     
     const body = await req.json();
-    const { prompt, selectedModels } = body;
+    const { prompt, selectedModels, streaming = false } = body;
 
-    console.log('Request body:', { prompt: prompt?.substring(0, 50) + '...', selectedModels });
+    console.log('Request body:', { 
+      prompt: prompt?.substring(0, 50) + '...', 
+      selectedModels,
+      streaming 
+    });
 
     if (!prompt || !selectedModels || !Array.isArray(selectedModels) || selectedModels.length === 0) {
       console.error('Invalid request:', { prompt, selectedModels });
@@ -51,6 +57,11 @@ export async function POST(req: Request) {
         { error: 'Prompt and at least one model are required' },
         { status: 400 }
       );
+    }
+
+    // Check for streaming mode
+    if (streaming && selectedModels.length === 1) {
+      return handleStreamingRequest(prompt, selectedModels[0]);
     }
 
     // Validate model names against our valid models list
@@ -164,6 +175,55 @@ export async function POST(req: Request) {
     }
   } catch (error) {
     console.error('Error processing request:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+}
+
+// Streaming version
+async function handleStreamingRequest(prompt: string, model: string) {
+  try {
+    console.log(`Streaming request for model: ${model}`);
+    
+    // Initialize OpenAI client
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    
+    // Check if the model supports JSON response format
+    const supportsJsonFormat = !model.includes('instruct');
+    
+    // Get model info
+    const modelInfo = MODEL_INFO[model] || { 
+      tokenLimit: 4096, 
+      outputLimit: 4096,
+      family: 'Unknown' 
+    };
+    
+    // Create streaming response
+    const response = await openai.chat.completions.create({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an assistant that always responds in JSON format. Your response should be a valid JSON object.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      ...(supportsJsonFormat && { response_format: { type: 'json_object' } }),
+      max_tokens: modelInfo.outputLimit,
+      stream: true,
+    });
+    
+    // Return a streaming response using Vercel AI SDK
+    return new StreamingTextResponse(response);
+  } catch (error) {
+    console.error('Error in streaming request:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
