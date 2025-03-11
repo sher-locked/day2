@@ -34,31 +34,43 @@ export function useStreamingResponse() {
         });
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to start streaming');
+          // Try to get error message from response
+          try {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to start streaming');
+          } catch (jsonError) {
+            throw new Error(`Failed to start streaming: ${response.status} ${response.statusText}`);
+          }
         }
 
         // Check if we got a streaming response
         if (!response.body) {
-          throw new Error('Streaming response not supported');
+          throw new Error('Streaming response not supported by your browser');
         }
-
-        // Get the reader from the stream
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let accumulatedContent = '';
 
         // Signal that streaming has started
         if (onStreamStart) onStreamStart();
 
-        // Process the stream
+        // Process the stream with the ReadableStream API
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedContent = '';
+
+        // Process the stream chunks
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           
-          // Decode the chunk and append to content
+          // Decode and process chunk
           const chunk = decoder.decode(value, { stream: true });
           accumulatedContent += chunk;
+          setContent(accumulatedContent);
+        }
+
+        // Ensure we have the complete content
+        const finalChunk = decoder.decode();
+        if (finalChunk) {
+          accumulatedContent += finalChunk;
           setContent(accumulatedContent);
         }
 

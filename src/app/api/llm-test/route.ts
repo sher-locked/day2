@@ -1,6 +1,5 @@
 import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
-import { StreamingTextResponse } from 'ai';
 
 // Set the runtime environment
 export const runtime = 'edge';
@@ -182,14 +181,14 @@ export async function POST(req: Request) {
   }
 }
 
-// Streaming version
+// Simple manual streaming implementation
 async function handleStreamingRequest(prompt: string, model: string) {
   try {
     console.log(`Streaming request for model: ${model}`);
     
     // Initialize OpenAI client
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: process.env.OPENAI_API_KEY || '',
     });
     
     // Check if the model supports JSON response format
@@ -202,26 +201,52 @@ async function handleStreamingRequest(prompt: string, model: string) {
       family: 'Unknown' 
     };
     
-    // Create streaming response
-    const response = await openai.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an assistant that always responds in JSON format. Your response should be a valid JSON object.'
-        },
-        {
-          role: 'user',
-          content: prompt
+    // Create a custom streaming response
+    const encoder = new TextEncoder();
+    const customStream = new ReadableStream({
+      async start(controller) {
+        try {
+          // Create the OpenAI streaming request
+          const streamResponse = await openai.chat.completions.create({
+            model,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are an assistant that always responds in JSON format. Your response should be a valid JSON object.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            ...(supportsJsonFormat && { response_format: { type: 'json_object' } }),
+            max_tokens: modelInfo.outputLimit,
+            stream: true,
+          });
+          
+          // Handle the streaming response
+          for await (const chunk of streamResponse) {
+            const content = chunk.choices[0]?.delta?.content || '';
+            if (content) {
+              controller.enqueue(encoder.encode(content));
+            }
+          }
+          controller.close();
+        } catch (error) {
+          console.error('Stream error:', error);
+          controller.error(error);
         }
-      ],
-      ...(supportsJsonFormat && { response_format: { type: 'json_object' } }),
-      max_tokens: modelInfo.outputLimit,
-      stream: true,
+      },
     });
-    
-    // Return a streaming response using Vercel AI SDK
-    return new StreamingTextResponse(response);
+
+    // Return the stream response
+    return new Response(customStream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
   } catch (error) {
     console.error('Error in streaming request:', error);
     return NextResponse.json(
