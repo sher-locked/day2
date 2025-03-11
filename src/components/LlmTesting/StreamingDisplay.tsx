@@ -5,6 +5,9 @@ import { ModelInfo } from '@/lib/constants/modelInfo';
 import { UsageData, CostData } from '@/lib/utils/tokenCalculation';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { CustomBadge } from './ui/CustomBadge';
+import { EnhancedContent } from './renderers/EnhancedContent';
+import { TokenUsage } from './renderers/TokenUsage';
 
 // New RatingIndicator component for better visual representation
 function RatingIndicator({ 
@@ -103,7 +106,7 @@ type StreamingDisplayProps = {
   response: Record<string, unknown> | null;
   usageData: UsageData | null;
   modelInfo: ModelInfo | null;
-  mode?: 'user' | 'dev'; // New prop to determine display mode
+  mode?: 'user' | 'dev'; // Prop to determine display mode
 };
 
 export function StreamingDisplay({ 
@@ -373,7 +376,7 @@ export function StreamingDisplay({
     );
   };
 
-  // Legacy renderPrettyField and renderPrettyContent for fallback
+  // Legacy renderPrettyField for fallback
   const renderPrettyField = (key: string, value: any, depth = 0): React.ReactNode => {
     // Handle different types of values
     if (value === null || value === undefined) {
@@ -400,7 +403,7 @@ export function StreamingDisplay({
     } else if (Array.isArray(value)) {
       return (
         <div key={key} className="mb-2" style={{ marginLeft: `${depth * 12}px` }}>
-          <div className="pl-4 font-medium">{key}: <Badge variant="outline">{value.length} items</Badge></div>
+          <div className="pl-4 font-medium">{key}: <CustomBadge variant="outline">{value.length} items</CustomBadge></div>
           <div className="pl-4 ml-4 border-l border-slate-200 dark:border-slate-700 mt-1">
             {value.map((item, index) => 
               typeof item === 'object' && item !== null 
@@ -500,11 +503,13 @@ export function StreamingDisplay({
           ) : (
             <div 
               ref={prettyDisplayRef}
-              className="p-4 max-h-[500px] overflow-y-auto font-sans text-sm"
+              className="max-h-[500px] overflow-y-auto font-sans text-sm"
             >
               {!content ? (
-                <div className="text-slate-400 italic">Response will appear here...</div>
-              ) : renderEnhancedPrettyContent()}
+                <div className="text-slate-400 italic p-4">Response will appear here...</div>
+              ) : (
+                <EnhancedContent parsedContent={parsedContent} />
+              )}
             </div>
           )}
         </CardContent>
@@ -512,56 +517,11 @@ export function StreamingDisplay({
       
       {/* Token Usage Details */}
       {usageData && (
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="text-sm font-medium mb-2">Token Usage & Costs</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex flex-col bg-slate-50 dark:bg-slate-900 p-3 rounded-md">
-                <span className="text-xs text-slate-500 dark:text-slate-400">Input Tokens</span>
-                <span className="text-lg font-medium">{formatNumber(tokenDetails.inputTokens)}</span>
-              </div>
-              <div className="flex flex-col bg-slate-50 dark:bg-slate-900 p-3 rounded-md">
-                <span className="text-xs text-slate-500 dark:text-slate-400">Output Tokens</span>
-                <span className="text-lg font-medium">{formatNumber(tokenDetails.outputTokens)}</span>
-              </div>
-              <div className="flex flex-col bg-slate-50 dark:bg-slate-900 p-3 rounded-md">
-                <span className="text-xs text-slate-500 dark:text-slate-400">Total Tokens</span>
-                <span className="text-lg font-medium">{formatNumber(tokenDetails.totalTokens)}</span>
-              </div>
-            </div>
-            
-            {/* Cost information if available */}
-            {(usdCostData || inrCostData) && (
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {usdCostData && (
-                  <div className="flex flex-col bg-slate-50 dark:bg-slate-900 p-3 rounded-md">
-                    <span className="text-xs text-slate-500 dark:text-slate-400">Cost (USD)</span>
-                    <div className="flex flex-col text-sm">
-                      <span>Input: {formatCurrency(usdCostData.input, 'USD')}</span>
-                      <span>Output: {formatCurrency(usdCostData.output, 'USD')}</span>
-                      <span className="text-base font-medium mt-1">
-                        Total: {formatCurrency(usdCostData.total, 'USD')}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                
-                {inrCostData && (
-                  <div className="flex flex-col bg-slate-50 dark:bg-slate-900 p-3 rounded-md">
-                    <span className="text-xs text-slate-500 dark:text-slate-400">Cost (INR)</span>
-                    <div className="flex flex-col text-sm">
-                      <span>Input: {formatCurrency(inrCostData.input, 'INR')}</span>
-                      <span>Output: {formatCurrency(inrCostData.output, 'INR')}</span>
-                      <span className="text-base font-medium mt-1">
-                        Total: {formatCurrency(inrCostData.total, 'INR')}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <TokenUsage
+          tokenDetails={tokenDetails}
+          usdCostData={usdCostData}
+          inrCostData={inrCostData}
+        />
       )}
       
       {/* Raw Response Data (for debugging) */}

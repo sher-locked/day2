@@ -8,6 +8,7 @@ A Next.js application for testing different LLMs' responses to prompts that shou
 - Compare JSON responses side-by-side
 - Visual indicators for successful and failed responses
 - Supports OpenAI models (GPT-4, GPT-3.5 Turbo) and Anthropic models (Claude 3 series)
+- User Mode and Developer Mode for different user experiences
 
 ## Tech Stack
 
@@ -17,6 +18,74 @@ A Next.js application for testing different LLMs' responses to prompts that shou
 - [Tailwind CSS](https://tailwindcss.com/) for styling
 - [TypeScript](https://www.typescriptlang.org/) for type safety
 - [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/) for form validation
+
+## Code Structure
+
+The application follows a modular architecture for maintainability and scalability:
+
+### Directory Structure
+
+```
+src/
+├── app/                  # Next.js App Router pages and API routes
+│   ├── api/              # API endpoints
+│   │   └── llm-test/     # API endpoint for LLM testing
+│   └── page.tsx          # Main application page
+├── components/           # React components
+│   ├── LlmTesting/       # LLM testing specific components
+│   │   ├── ui/           # UI utility components
+│   │   ├── renderers/    # Content rendering components
+│   │   ├── ModelSelector.tsx
+│   │   ├── StreamingDisplay.tsx
+│   │   └── ThinkingIndicator.tsx
+│   ├── ui/               # Shared UI components (from ShadCN)
+│   └── LlmTestingInterface.tsx  # Main interface component
+├── hooks/                # Custom React hooks
+│   └── useStreamingResponse.ts  # Hook for streaming LLM responses
+├── lib/                  # Utility libraries and helpers
+│   ├── constants/        # Application constants
+│   └── utils/            # Utility functions
+│       ├── formatters.ts # Text formatting utilities
+│       └── tokenCalculation.ts # Token counting and cost calculation
+```
+
+### Key Components
+
+1. **LlmTestingInterface**: Main component that integrates all UI elements and manages the application state. Provides two different modes:
+   - **User Mode**: Simplified interface for general users, focusing on the content.
+   - **Dev Mode**: Technical interface with additional debugging information for developers.
+
+2. **StreamingDisplay**: Handles the display of streaming responses from LLMs with support for:
+   - Pretty formatting of JSON responses
+   - Raw JSON view (in Dev Mode)
+   - Token usage statistics and cost calculations
+
+3. **Renderers**: Modular components that render different parts of the LLM response:
+   - **SummaryDashboard**: Shows the summary of analysis
+   - **AnalysisSection**: Displays detailed analysis sections
+   - **Notes**: Shows additional notes and issues
+   - **SuggestedImprovements**: Displays improvement suggestions
+   - **TokenUsage**: Shows token usage and cost information
+
+4. **ModelSelector**: UI component for selecting different LLM models with information about each model.
+
+5. **ThinkingIndicator**: Visual indicator showing progress during LLM processing.
+
+### API Structure
+
+The API uses Next.js API routes to handle communication with LLM services:
+
+1. **llm-test/route.ts**: Handles requests to generate LLM responses with:
+   - Support for multiple LLM providers
+   - Streaming and non-streaming responses
+   - Token usage tracking
+   - Cost calculation
+
+### State Management
+
+The application uses React's built-in state management with custom hooks:
+
+1. **useStreamingResponse**: Custom hook for handling streaming responses from the LLM API.
 
 ## Getting Started
 

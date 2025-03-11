@@ -1,0 +1,50 @@
+---
+description: Cursor rules for this project, meant for anlysing via LLMs. 
+globs: 
+alwaysApply: false
+---
+# Cursor Rules: LLM Response Testing Platform
+
+## Project Goal
+Build a proof of concept application to test different LLMs' ability to respond to a structured prompt and return valid JSON. The platform will allow pasting text samples, selecting different LLM providers, editing the prompt template, and analyzing token usage.
+
+## Tech Stack
+- Frontend: Next.js with ShadCN UI components
+- Backend: Next.js API routes 
+- LLM Integration: Vercel AI SDK
+- Deployment: Vercel hosting
+
+## Key Requirements
+1. Text input area for pasting content to analyze
+2. LLM provider/model selection (OpenAI o3-mini, OpenAI o1, Deepseek R1, Grok, etc.)
+3. Editable prompt template with ability to save changes
+4. JSON response display with validation and formatting
+5. Token usage metrics for input and output
+6. No database or state persistence needed
+
+## UI Components
+- Text input area (resizable)
+- Model selector dropdown
+- Prompt editor (collapsible)
+- Response viewer with JSON formatting
+- Token counter display
+- Submit button and loading states
+
+## API Setup
+- Use Next.js API routes to proxy requests to LLM providers
+- Implement proper error handling
+- Configure CORS if needed
+- Track and display token usage
+
+## Implementation Notes
+- Focus on clean, responsive UI
+- Prioritize proper JSON parsing and validation
+- Implement effective loading states
+- Handle errors gracefully
+- Ensure the prompt template can be modified
+
+## Non-Goals
+- User authentication
+- Data persistence
+- Complex state management
+- Production-ready security
