@@ -7,9 +7,10 @@ import {
   SelectTrigger,
   SelectValue 
 } from '@/components/ui/select';
-import { MODEL_INFO, availableModels } from '@/lib/constants/modelInfo';
+import { availableModels, getModelInfo } from '@/lib/constants/modelInfo';
 import { formatNumber, formatCurrency } from '@/lib/utils/formatters';
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 
 // USD to INR conversion rate (can be moved to a config file)
 const USD_TO_INR = 83.34;
@@ -25,6 +26,32 @@ export function ModelSelector({
   onModelChange, 
   disabled = false 
 }: ModelSelectorProps) {
+  // State for API key status
+  const [apiKeyStatus, setApiKeyStatus] = useState<{
+    openai: boolean;
+    anthropic: boolean;
+  }>({ openai: false, anthropic: false });
+  
+  // Check API key status on mount
+  useEffect(() => {
+    async function checkApiKeyStatus() {
+      try {
+        const response = await fetch('/api/check-api-keys');
+        if (response.ok) {
+          const data = await response.json();
+          setApiKeyStatus({
+            openai: data.openaiAvailable,
+            anthropic: data.anthropicAvailable
+          });
+        }
+      } catch (error) {
+        console.error('Error checking API keys:', error);
+      }
+    }
+    
+    checkApiKeyStatus();
+  }, []);
+  
   // Group models by provider and category
   const anthropicOSeries = availableModels.filter(model => model.provider === 'anthropic' && model.category === 'O-Series');
   const anthropicClaude = availableModels.filter(model => model.provider === 'anthropic' && model.category === 'Claude');
@@ -37,7 +64,7 @@ export function ModelSelector({
   );
   
   // Currently selected model info
-  const modelInfo = MODEL_INFO[selectedModel];
+  const modelInfo = getModelInfo(selectedModel);
   
   // Helper to get provider label and icon
   const getProviderInfo = (provider: 'openai' | 'anthropic') => {
@@ -97,15 +124,26 @@ export function ModelSelector({
         <SelectContent className="max-h-80">
           {/* Anthropic Models Section */}
           <div className="px-2 py-1.5 mb-1 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded-md">
-            <div className="flex items-center mb-2">
-              <Image 
-                src="/images/anthropic-icon.png" 
-                alt="Anthropic" 
-                width={20} 
-                height={20} 
-                className="mr-2"
-              />
-              <span className="font-bold text-blue-800 dark:text-blue-300">Anthropic Models</span>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <Image 
+                  src="/images/anthropic-icon.png" 
+                  alt="Anthropic" 
+                  width={20} 
+                  height={20} 
+                  className="mr-2"
+                />
+                <span className="font-bold text-blue-800 dark:text-blue-300">Anthropic Models</span>
+              </div>
+              
+              {/* API key status indicator */}
+              <div className={`text-xs px-2 py-0.5 rounded-full ${
+                apiKeyStatus.anthropic 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+              }`}>
+                {apiKeyStatus.anthropic ? 'API Key ✓' : 'No API Key ✗'}
+              </div>
             </div>
             
             {/* O-Series Reasoning Models */}
@@ -126,8 +164,12 @@ export function ModelSelector({
                     key={model.value} 
                     value={model.value}
                     className="ml-6 border-l-2 border-blue-200 dark:border-blue-800 pl-2"
+                    disabled={!apiKeyStatus.anthropic || disabled}
                   >
                     {model.label}
+                    {!apiKeyStatus.anthropic && (
+                      <span className="ml-2 text-red-500 text-xs">⚠️ API Key Required</span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -151,8 +193,12 @@ export function ModelSelector({
                     key={model.value} 
                     value={model.value}
                     className="ml-6 border-l-2 border-blue-200 dark:border-blue-800 pl-2"
+                    disabled={!apiKeyStatus.anthropic || disabled}
                   >
                     {model.label}
+                    {!apiKeyStatus.anthropic && (
+                      <span className="ml-2 text-red-500 text-xs">⚠️ API Key Required</span>
+                    )}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -161,15 +207,26 @@ export function ModelSelector({
           
           {/* OpenAI Models Section */}
           <div className="px-2 py-1.5 my-1 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 rounded-md">
-            <div className="flex items-center mb-2">
-              <Image 
-                src="/images/openai-icon.png" 
-                alt="OpenAI" 
-                width={20} 
-                height={20} 
-                className="mr-2"
-              />
-              <span className="font-bold text-emerald-800 dark:text-emerald-300">OpenAI Models</span>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <Image 
+                  src="/images/openai-icon.png" 
+                  alt="OpenAI" 
+                  width={20} 
+                  height={20} 
+                  className="mr-2"
+                />
+                <span className="font-bold text-emerald-800 dark:text-emerald-300">OpenAI Models</span>
+              </div>
+              
+              {/* API key status indicator */}
+              <div className={`text-xs px-2 py-0.5 rounded-full ${
+                apiKeyStatus.openai 
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+              }`}>
+                {apiKeyStatus.openai ? 'API Key ✓' : 'No API Key ✗'}
+              </div>
             </div>
             
             {/* GPT-4 Models */}

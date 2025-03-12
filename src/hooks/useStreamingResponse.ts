@@ -68,16 +68,21 @@ export function useStreamingResponse(hookOptions: HookOptions = {}) {
           // Try to get error message from response
           try {
             const errorData = await response.json();
-            throw new Error(errorData.error || `Failed to start streaming: ${response.status} ${response.statusText}`);
+            setError(errorData.error || `Failed to start streaming: ${response.status} ${response.statusText}`);
+            // Return the response so it can be further processed by the caller
+            return response;
           } catch (_jsonError) {
-            throw new Error(`Failed to start streaming: ${response.status} ${response.statusText}`);
+            setError(`Failed to start streaming: ${response.status} ${response.statusText}`);
+            // Return the response so it can be further processed by the caller
+            return response;
           }
         }
 
         // Check if we got a streaming response
         if (!response.body) {
           setStage('error');
-          throw new Error('Streaming response not supported by your browser');
+          setError('Streaming response not supported by your browser');
+          return response;
         }
 
         // Signal that streaming has started - thinking stage
@@ -127,10 +132,13 @@ export function useStreamingResponse(hookOptions: HookOptions = {}) {
         if (hookOptions.onComplete) {
           hookOptions.onComplete();
         }
+        
+        return response;
       } catch (err) {
         console.error('Streaming error:', err);
         setStage('error');
         setError(err instanceof Error ? err.message : 'Unknown error');
+        return null;
       } finally {
         setIsLoading(false);
       }

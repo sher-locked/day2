@@ -83,13 +83,17 @@ src/
 
 ### API Structure
 
-The API uses Next.js API routes to handle communication with LLM services:
+The API uses Next.js API routes to handle communication with LLM services, organized in a modular way:
 
-1. **llm-test/route.ts**: Handles requests to generate LLM responses with:
-   - Support for multiple LLM providers
-   - Streaming and non-streaming responses
-   - Token usage tracking
-   - Cost calculation
+1. **llm-test/route.ts**: Main API route handler that coordinates requests
+2. **services/**:
+   - **client-service.ts**: Manages API client initialization
+   - **model-info.ts**: Contains model metadata and specifications
+   - **openai-service.ts**: Handles OpenAI-specific requests
+   - **anthropic-service.ts**: Handles Anthropic-specific requests
+   - **streaming-service.ts**: Manages streaming responses for both providers
+3. **utils/token-utils.ts**: Utilities for token counting and cost calculation
+4. **types.ts**: Type definitions for API requests and responses
 
 ### State Management
 
@@ -145,11 +149,14 @@ The platform already supports OpenAI and Anthropic models out of the box. To add
    npm install <provider-sdk>
    ```
 
-2. Update the API route in `src/app/api/llm-test/route.ts` to include the new provider
-3. Add the new models to the `MODEL_INFO` object in `src/lib/constants/modelInfo.ts`
-4. Add the models to the `availableModels` array in the same file
-5. Update the `ModelSelector.tsx` component to display the new provider's models
-6. Add the provider's logo to the `public/images` directory
+2. Create a new service file in `src/app/api/llm-test/services/`
+3. Add the new provider to the `types.ts` file's ModelInfo type
+4. Add the new models to the `MODEL_INFO` object in both:
+   - `src/lib/constants/modelInfo.ts` (for frontend use)
+   - `src/app/api/llm-test/services/model-info.ts` (for API use)
+5. Add the models to the `availableModels` array
+6. Update the `ModelSelector.tsx` component to display the new provider's models
+7. Add the provider's logo to the `public/images` directory
 
 ## License
 

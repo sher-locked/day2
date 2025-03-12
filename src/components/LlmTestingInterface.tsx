@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useStreamingResponse } from '@/hooks/useStreamingResponse';
-import { availableModels, MODEL_INFO } from '@/lib/constants/modelInfo';
+import { availableModels, getModelInfo } from '@/lib/constants/modelInfo';
 import { estimateTokens } from '@/lib/utils/tokenCalculation';
 import { formatNumber } from '@/lib/utils/formatters';
 
@@ -98,7 +98,7 @@ export function LlmTestingInterface() {
   const [estimatedTokensForInput, setEstimatedTokensForInput] = useState(0);
   
   // Get selected model info
-  const modelInfo = MODEL_INFO[selectedModel];
+  const modelInfo = getModelInfo(selectedModel);
   
   // Streaming state from custom hook
   const {
@@ -125,25 +125,49 @@ export function LlmTestingInterface() {
     setEstimatedTokensForInput(estimatedTokenCount);
   }, [userPrompt, productPrompt, combinedPrompt]);
   
+  // Add state for API key errors
+  const [apiKeyError, setApiKeyError] = useState<{providers: string[], models: string[]} | null>(null);
+  
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStartTime(Date.now());
     resetStream();
+    // Reset API key error
+    setApiKeyError(null);
     
-    // Start the streaming process
-    await startStreaming('/api/llm-test', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        prompt: userPrompt,
-        selectedModels: [selectedModel],
-        streaming: true,
-        systemMessage: productPrompt
-      })
-    });
+    try {
+      // Start the streaming process
+      const response = await startStreaming('/api/llm-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: userPrompt,
+          selectedModels: [selectedModel],
+          streaming: true,
+          systemMessage: productPrompt
+        })
+      });
+      
+      // Check if response contains API key error
+      if (response && response.status === 401) {
+        try {
+          const errorData = await response.clone().json();
+          if (errorData.missingProviders) {
+            setApiKeyError({
+              providers: errorData.missingProviders,
+              models: selectedModel ? [selectedModel] : []
+            });
+          }
+        } catch (jsonErr) {
+          console.error('Error parsing error response:', jsonErr);
+        }
+      }
+    } catch (err) {
+      console.error('Error submitting request:', err);
+    }
   };
   
   return (
@@ -238,6 +262,27 @@ export function LlmTestingInterface() {
               <CardContent className="pt-6">
                 <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-2">Error</h3>
                 <p className="text-sm">{error}</p>
+              </CardContent>
+            </Card>
+          )}
+          
+          {apiKeyError && (
+            <Card className="border-amber-300 dark:border-amber-800">
+              <CardContent className="pt-6">
+                <h3 className="text-lg font-medium text-amber-600 dark:text-amber-400 mb-2">API Key Missing</h3>
+                <div className="space-y-2">
+                  <p className="text-sm">
+                    <strong>Missing API key for {apiKeyError.providers.join(' and ')}.</strong> Unable to use model{apiKeyError.models.length > 1 ? 's' : ''}: {apiKeyError.models.join(', ')}.
+                  </p>
+                  <div className="bg-amber-50 dark:bg-amber-900/30 p-4 rounded text-sm">
+                    <p className="font-medium mb-1">To fix this issue:</p>
+                    <ol className="list-decimal pl-5 space-y-1">
+                      <li>Create an API key from the provider's website.</li>
+                      <li>Add it to your .env.local file.</li>
+                      <li>Restart the application.</li>
+                    </ol>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
