@@ -196,7 +196,12 @@ export function LlmTestingInterface() {
               <CardContent className="pt-6 space-y-6">
                 {/* Hero User Prompt input */}
                 <div className="space-y-2">
-                  <Label htmlFor="user-prompt" className="text-lg font-medium">Enter Your Text</Label>
+                  <div className="flex justify-between items-center">
+                    <Label htmlFor="user-prompt" className="text-lg font-medium">Enter Your Text</Label>
+                    <div className="text-xs text-slate-500 font-medium bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
+                      Using Model: <span className="font-bold">{selectedModel}</span>
+                    </div>
+                  </div>
                   <Textarea
                     id="user-prompt"
                     value={userPrompt}
@@ -296,55 +301,49 @@ export function LlmTestingInterface() {
         
         {/* Dev Mode - Focused on technical details and development information */}
         <TabsContent value="dev-mode" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left column - Input and Request details */}
-            <div className="space-y-6">
-              {/* Final combined prompt (read-only) */}
-              <Card>
-                <CardContent className="pt-6 space-y-4">
-                  <h3 className="text-lg font-medium">Final Prompt</h3>
-                  <div className="space-y-2">
-                    <Label htmlFor="final-prompt">Complete prompt sent to the LLM:</Label>
-                    <Textarea
-                      id="final-prompt"
-                      value={combinedPrompt}
-                      className="h-60 font-mono text-sm"
-                      readOnly
-                    />
-                    
-                    {/* Token estimation */}
-                    <div className="flex justify-between text-xs text-slate-500">
-                      <span>Estimated tokens: {formatNumber(estimatedTokensForInput)}</span>
-                      {modelInfo && (
-                        <span className={estimatedTokensForInput > modelInfo.tokenLimit ? 'text-red-500 font-medium' : ''}>
-                          Max input tokens: {formatNumber(modelInfo.tokenLimit)}
-                        </span>
-                      )}
-                    </div>
+          <div className="space-y-6">
+            {/* System Prompt (formerly Product Prompt) */}
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <h3 className="text-lg font-medium">System Prompt</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="product-prompt">Edit the system instructions:</Label>
+                  <Textarea
+                    id="product-prompt"
+                    value={productPrompt}
+                    onChange={(e) => setProductPrompt(e.target.value)}
+                    className="h-60 text-sm font-mono"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Final Call with Prompt (API with request JSON) */}
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <h3 className="text-lg font-medium">API Request</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="final-prompt">Complete prompt sent to the LLM:</Label>
+                  <Textarea
+                    id="final-prompt"
+                    value={combinedPrompt}
+                    className="h-60 font-mono text-sm"
+                    readOnly
+                  />
+                  
+                  {/* Token estimation */}
+                  <div className="flex justify-between text-xs text-slate-500">
+                    <span>Estimated tokens: {formatNumber(estimatedTokensForInput)}</span>
+                    {modelInfo && (
+                      <span className={estimatedTokensForInput > modelInfo.tokenLimit ? 'text-red-500 font-medium' : ''}>
+                        Max input tokens: {formatNumber(modelInfo.tokenLimit)}
+                      </span>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-              
-              {/* Product Prompt (editable) */}
-              <Card>
-                <CardContent className="pt-6 space-y-4">
-                  <h3 className="text-lg font-medium">System Prompt</h3>
-                  <div className="space-y-2">
-                    <Label htmlFor="product-prompt">Edit the system instructions:</Label>
-                    <Textarea
-                      id="product-prompt"
-                      value={productPrompt}
-                      onChange={(e) => setProductPrompt(e.target.value)}
-                      className="h-60 text-sm font-mono"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              {/* Request Details */}
-              <Card>
-                <CardContent className="pt-6 space-y-4">
-                  <h3 className="text-lg font-medium">API Request Details</h3>
+                </div>
+                
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium mb-2">Request Details:</h4>
                   <pre className="text-xs bg-slate-50 dark:bg-slate-900 p-3 rounded overflow-auto max-h-[200px]">
                     {JSON.stringify({
                       endpoint: '/api/llm-test',
@@ -353,125 +352,75 @@ export function LlmTestingInterface() {
                         'Content-Type': 'application/json'
                       },
                       body: {
-                        prompt: userPrompt ? '(user text)' : '',
+                        prompt: userPrompt ? '(user text from User Mode)' : '',
                         selectedModels: [selectedModel],
                         streaming: true,
                         systemMessage: '(system prompt)'
                       }
                     }, null, 2)}
                   </pre>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Right column - Response and Analysis */}
-            <div className="space-y-6">
-              {/* User input for testing */}
-              <Card>
-                <CardContent className="pt-6 space-y-4">
-                  <h3 className="text-lg font-medium">Test Input</h3>
-                  <div className="space-y-2">
-                    <Label htmlFor="dev-user-prompt">Enter text to analyze:</Label>
-                    <Textarea
-                      id="dev-user-prompt"
-                      value={userPrompt}
-                      onChange={(e) => setUserPrompt(e.target.value)}
-                      className="h-40 text-sm"
-                      placeholder="Paste your text here for testing..."
-                      disabled={isLoading}
-                    />
-                  </div>
-                  
-                  {/* Model selector */}
-                  <ModelSelector 
-                    selectedModel={selectedModel}
-                    onModelChange={setSelectedModel}
-                    disabled={isLoading}
-                  />
-                  
-                  {/* Submit button */}
-                  <div className="flex justify-end">
-                    <Button 
-                      onClick={handleSubmit} 
-                      disabled={isLoading || !userPrompt.trim()}
-                      className="w-full sm:w-auto"
-                    >
-                      {isLoading ? 'Analyzing...' : 'Test Now'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              {/* Response data */}
-              {(isLoading || content) && (
-                <div className="space-y-4">
-                  {/* Thinking/streaming indicator */}
-                  <ThinkingIndicator 
-                    stage={stage} 
-                    model={selectedModel} 
-                    startTime={startTime}
-                    usageData={usageData}
-                    modelInfo={modelInfo}
-                  />
-                  
-                  {/* StreamingDisplay for Dev Mode */}
-                  <StreamingDisplay 
-                    content={content}
-                    model={selectedModel}
-                    response={responseData}
-                    usageData={usageData}
-                    modelInfo={modelInfo}
-                    mode="dev"
-                  />
-                  
-                  {/* Raw response data */}
-                  <Card>
-                    <CardContent className="pt-6 space-y-4">
-                      <h3 className="text-lg font-medium">API Response</h3>
-                      <pre className="text-xs bg-slate-50 dark:bg-slate-900 p-3 rounded overflow-auto max-h-[300px]">
-                        {content ? content : "Waiting for response..."}
-                      </pre>
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Response metadata */}
-                  {responseData && (
-                    <Card>
-                      <CardContent className="pt-6 space-y-4">
-                        <h3 className="text-lg font-medium">Response Metadata</h3>
-                        <pre className="text-xs bg-slate-50 dark:bg-slate-900 p-3 rounded overflow-auto max-h-[200px]">
-                          {JSON.stringify(responseData, null, 2)}
-                        </pre>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  {/* Usage data */}
-                  {usageData && (
-                    <Card>
-                      <CardContent className="pt-6 space-y-4">
-                        <h3 className="text-lg font-medium">Usage Data</h3>
-                        <pre className="text-xs bg-slate-50 dark:bg-slate-900 p-3 rounded overflow-auto max-h-[200px]">
-                          {JSON.stringify(usageData, null, 2)}
-                        </pre>
-                      </CardContent>
-                    </Card>
-                  )}
                 </div>
-              )}
-              
-              {/* Error display */}
-              {error && (
-                <Card className="border-red-300 dark:border-red-800">
-                  <CardContent className="pt-6">
-                    <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-2">Error</h3>
-                    <pre className="text-xs bg-red-50 dark:bg-red-900/30 p-3 rounded overflow-auto">
-                      {error}
+                
+                {/* Submit button - Hidden in Dev Mode, since we want users to use User Mode for testing */}
+                <div className="flex items-center mt-4 p-3 bg-amber-50 dark:bg-amber-900/30 rounded border border-amber-200 dark:border-amber-800">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Dev Mode is for configuration only</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">Please use User Mode to test with the current model ({selectedModel})</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Response Sections */}
+            {(isLoading || content) && (
+              <div className="space-y-4">
+                {/* Streamed API Response Data */}
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    <h3 className="text-lg font-medium">API Response</h3>
+                    <pre className="text-xs bg-slate-50 dark:bg-slate-900 p-3 rounded overflow-auto max-h-[300px]">
+                      {content ? content : "Waiting for response..."}
                     </pre>
                   </CardContent>
                 </Card>
-              )}
-            </div>
+                
+                {/* Response metadata */}
+                {responseData && (
+                  <Card>
+                    <CardContent className="pt-6 space-y-4">
+                      <h3 className="text-lg font-medium">Response Metadata</h3>
+                      <pre className="text-xs bg-slate-50 dark:bg-slate-900 p-3 rounded overflow-auto max-h-[200px]">
+                        {JSON.stringify(responseData, null, 2)}
+                      </pre>
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {/* Usage data */}
+                {usageData && (
+                  <Card>
+                    <CardContent className="pt-6 space-y-4">
+                      <h3 className="text-lg font-medium">Usage Data</h3>
+                      <pre className="text-xs bg-slate-50 dark:bg-slate-900 p-3 rounded overflow-auto max-h-[200px]">
+                        {JSON.stringify(usageData, null, 2)}
+                      </pre>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+            
+            {/* Error display */}
+            {error && (
+              <Card className="border-red-300 dark:border-red-800">
+                <CardContent className="pt-6">
+                  <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-2">Error</h3>
+                  <pre className="text-xs bg-red-50 dark:bg-red-900/30 p-3 rounded overflow-auto">
+                    {error}
+                  </pre>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
       </Tabs>
