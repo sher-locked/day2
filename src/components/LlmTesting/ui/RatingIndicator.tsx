@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Star, Stars, AlertTriangle } from 'lucide-react';
+import { CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 
 type RatingIndicatorProps = {
   rating: string | undefined;
@@ -28,27 +28,20 @@ export function RatingIndicator({
     case 'strong':
     case 'great':
       textColor = 'text-green-600 dark:text-green-500';
-      icon = <Stars className="stroke-green-600 dark:stroke-green-500" />;
+      icon = <CheckCircle className="fill-green-600 dark:fill-green-500 stroke-white dark:stroke-slate-900" />;
       break;
     case 'good':
-      textColor = 'text-yellow-600 dark:text-yellow-500';
-      icon = <Star className="stroke-yellow-600 dark:stroke-yellow-500" />;
+      textColor = 'text-amber-600 dark:text-amber-500';
+      icon = <AlertCircle className="fill-amber-500 dark:fill-amber-500 stroke-white dark:stroke-slate-900" />;
       break;
     case 'weak':
       textColor = 'text-red-600 dark:text-red-500';
-      icon = <AlertTriangle className="stroke-red-600 dark:stroke-red-500" />;
+      icon = <XCircle className="fill-red-600 dark:fill-red-500 stroke-white dark:stroke-slate-900" />;
       break;
     default:
       textColor = 'text-gray-600 dark:text-gray-400';
-      icon = <Star className="stroke-gray-600 dark:stroke-gray-400" />;
+      icon = <CheckCircle className="fill-gray-600 dark:fill-gray-400 stroke-white dark:stroke-slate-900" />;
   }
-
-  // Type-specific color adjustments but without duplicating icons
-  const colorClass = 
-    lowerRating === 'strong' || lowerRating === 'great' ? "stroke-green-600 dark:stroke-green-500" :
-    lowerRating === 'good' ? "stroke-yellow-600 dark:stroke-yellow-500" :
-    lowerRating === 'weak' ? "stroke-red-600 dark:stroke-red-500" :
-    "stroke-gray-600 dark:stroke-gray-400";
 
   // Size classes
   const sizeClasses = {
