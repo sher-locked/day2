@@ -14,22 +14,48 @@ type EnhancedContentProps = {
 // Placeholder skeleton components
 function SummarySkeleton() {
   return (
-    <div className="mb-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-lg p-4 shadow-sm animate-pulse">
-      <div className="flex items-center space-x-4 mb-4">
-        <Skeleton className="h-5 w-48" />
+    <div className="mb-8 bg-gradient-to-br from-white to-slate-50 dark:from-slate-950 dark:to-slate-900 rounded-xl p-6 shadow-md border border-slate-200 dark:border-slate-800 animate-pulse">
+      <div className="flex items-center space-x-4 mb-5 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <Skeleton className="h-6 w-48" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-950 p-4 rounded-md shadow-sm h-24">
-          <Skeleton className="h-4 w-24 mb-4" />
-          <Skeleton className="h-8 w-full" />
+      
+      {/* Storytelling and Reasoning Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-lg shadow-sm h-24 border border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2 mb-3">
+            <Skeleton className="h-5 w-5 rounded-full" />
+            <Skeleton className="h-5 w-24" />
+          </div>
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-6 w-28" />
+            <Skeleton className="h-5 w-5 rounded-full" />
+          </div>
         </div>
-        <div className="bg-white dark:bg-slate-950 p-4 rounded-md shadow-sm h-24">
-          <Skeleton className="h-4 w-24 mb-4" />
-          <Skeleton className="h-8 w-full" />
+        
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-lg shadow-sm h-24 border border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2 mb-3">
+            <Skeleton className="h-5 w-5 rounded-full" />
+            <Skeleton className="h-5 w-24" />
+          </div>
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-6 w-28" />
+            <Skeleton className="h-5 w-5 rounded-full" />
+          </div>
         </div>
-        <div className="bg-white dark:bg-slate-950 p-4 rounded-md shadow-sm h-24">
-          <Skeleton className="h-4 w-24 mb-4" />
-          <Skeleton className="h-8 w-full" />
+      </div>
+      
+      {/* Priority Focus */}
+      <div className="mt-2">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <Skeleton className="h-9 w-9 rounded-full" />
+            </div>
+            <div className="flex-1">
+              <Skeleton className="h-5 w-32 mb-3" />
+              <Skeleton className="h-16 w-full rounded-md" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -38,28 +64,50 @@ function SummarySkeleton() {
 
 function AnalysisSkeleton() {
   return (
-    <div className="mb-6 border rounded-lg p-4 bg-white dark:bg-slate-950 shadow-sm animate-pulse">
-      <div className="flex items-center justify-between mb-4">
-        <Skeleton className="h-5 w-48" />
-        <Skeleton className="h-6 w-24" />
-      </div>
-      <div className="space-y-4">
-        <div className="pt-3 border-t">
-          <div className="flex justify-between items-center mb-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-          <Skeleton className="h-4 w-full mb-1" />
-          <Skeleton className="h-4 w-5/6 mb-1" />
-          <Skeleton className="h-4 w-4/6" />
+    <div className="mb-6 border rounded-lg overflow-hidden bg-white dark:bg-slate-950 shadow-sm animate-pulse">
+      <div className="flex items-center justify-between p-4 border-b bg-slate-50 dark:bg-slate-900">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-5 w-5 rounded-full" />
+          <Skeleton className="h-5 w-48" />
         </div>
-        <div className="pt-3 border-t">
-          <div className="flex justify-between items-center mb-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-5 w-16" />
+        <Skeleton className="h-6 w-24 rounded-md" />
+      </div>
+      
+      <div className="p-4 space-y-4">
+        <div className="border-b pb-4">
+          <div className="flex items-center gap-3 mb-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="flex-1 flex items-center justify-between">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-5 w-16" />
+            </div>
           </div>
-          <Skeleton className="h-4 w-full mb-1" />
-          <Skeleton className="h-4 w-5/6" />
+          <div className="ml-10 space-y-2">
+            <Skeleton className="h-4 w-full mb-1" />
+            <Skeleton className="h-4 w-5/6 mb-1" />
+            <Skeleton className="h-4 w-4/6" />
+          </div>
+          <div className="ml-10 mt-3">
+            <Skeleton className="h-16 w-full rounded-md" />
+          </div>
+        </div>
+        
+        <div className="border-b pb-4">
+          <div className="flex items-center gap-3 mb-3">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <div className="flex-1 flex items-center justify-between">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-5 w-16" />
+            </div>
+          </div>
+          <div className="ml-10 space-y-2">
+            <Skeleton className="h-4 w-full mb-1" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
+        </div>
+        
+        <div className="mt-4">
+          <Skeleton className="h-16 w-full rounded-md" />
         </div>
       </div>
     </div>
@@ -305,7 +353,7 @@ export function EnhancedContent({ parsedContent, stage = 'complete', rawContent 
 
   // Progressive rendering with fade-in animations for each section
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4 overflow-hidden">
       {/* Summary Dashboard - either show component or skeleton */}
       {displayContent.summaryDashboard ? (
         <div className={`transition-opacity duration-500 ${hasSummary ? 'opacity-100' : 'opacity-0'}`}>

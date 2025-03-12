@@ -1,66 +1,88 @@
 import { cn } from '@/lib/utils';
+import { Star, Stars, AlertTriangle, BookOpen, Brain } from 'lucide-react';
+
+type RatingIndicatorProps = {
+  rating: string | undefined;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+  type?: 'storytelling' | 'reasoning' | 'default';
+};
 
 // RatingIndicator component for visual representation of ratings
 export function RatingIndicator({ 
   rating,
   size = 'md',
-  className
-}: { 
-  rating: string | undefined; 
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
-}) {
+  className,
+  type = 'default'
+}: RatingIndicatorProps) {
   if (!rating) return null;
   
   const lowerRating = rating.toLowerCase();
   
   // Determine style based on rating
-  let bgColor = '';
   let textColor = '';
-  let icon = '';
+  let icon = null;
   let label = rating;
   
   switch (lowerRating) {
     case 'strong':
     case 'great':
-      bgColor = 'bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700';
-      textColor = 'text-white';
-      icon = '★★★';
+      textColor = 'text-green-600 dark:text-green-500';
+      icon = <Stars className="stroke-green-600 dark:stroke-green-500" />;
       break;
     case 'good':
-      bgColor = 'bg-gradient-to-r from-yellow-400 to-yellow-500 dark:from-yellow-500 dark:to-yellow-600';
-      textColor = 'text-gray-800 dark:text-gray-100';
-      icon = '★★';
+      textColor = 'text-yellow-600 dark:text-yellow-500';
+      icon = <Star className="stroke-yellow-600 dark:stroke-yellow-500" />;
       break;
     case 'weak':
-      bgColor = 'bg-gradient-to-r from-red-500 to-red-600 dark:from-red-600 dark:to-red-700';
-      textColor = 'text-white';
-      icon = '★';
+      textColor = 'text-red-600 dark:text-red-500';
+      icon = <AlertTriangle className="stroke-red-600 dark:stroke-red-500" />;
       break;
     default:
-      bgColor = 'bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800';
-      textColor = 'text-gray-700 dark:text-gray-200';
-      icon = '';
+      textColor = 'text-gray-600 dark:text-gray-400';
+      icon = <Star className="stroke-gray-600 dark:stroke-gray-400" />;
+  }
+
+  // Type-specific icons for storytelling and reasoning
+  if (type === 'storytelling') {
+    icon = <BookOpen className={cn("mr-1.5", 
+      lowerRating === 'strong' || lowerRating === 'great' ? "stroke-green-600 dark:stroke-green-500" :
+      lowerRating === 'good' ? "stroke-yellow-600 dark:stroke-yellow-500" :
+      lowerRating === 'weak' ? "stroke-red-600 dark:stroke-red-500" :
+      "stroke-gray-600 dark:stroke-gray-400"
+    )} />;
+  } else if (type === 'reasoning') {
+    icon = <Brain className={cn("mr-1.5", 
+      lowerRating === 'strong' || lowerRating === 'great' ? "stroke-green-600 dark:stroke-green-500" :
+      lowerRating === 'good' ? "stroke-yellow-600 dark:stroke-yellow-500" :
+      lowerRating === 'weak' ? "stroke-red-600 dark:stroke-red-500" :
+      "stroke-gray-600 dark:stroke-gray-400"
+    )} />;
   }
 
   // Size classes
   const sizeClasses = {
-    sm: 'text-xs py-1 px-2',
-    md: 'text-sm py-1.5 px-3',
-    lg: 'text-base py-2 px-4'
+    sm: 'text-xs gap-1',
+    md: 'text-sm gap-1.5',
+    lg: 'text-base gap-2'
+  };
+
+  const iconSizes = {
+    sm: 'size-4',
+    md: 'size-5',
+    lg: 'size-6'
   };
   
   return (
     <div 
       className={cn(
-        'rounded-md shadow-sm font-medium flex items-center justify-center',
-        bgColor,
+        'flex items-center font-medium',
         textColor,
         sizeClasses[size],
         className
       )}
     >
-      <span className="mr-1.5">{icon}</span>
+      <span className={iconSizes[size]}>{icon}</span>
       <span>{label}</span>
     </div>
   );
