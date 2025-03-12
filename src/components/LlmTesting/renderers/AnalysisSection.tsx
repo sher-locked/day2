@@ -30,7 +30,7 @@ export function AnalysisSection({ title, analysisData }: AnalysisSectionProps) {
   const isReasoning = title.toLowerCase().includes('reasoning');
   
   return (
-    <div className="mb-6 border rounded-lg overflow-hidden bg-white dark:bg-slate-950 shadow-sm">
+    <div className="mb-6 border rounded-lg bg-white dark:bg-slate-950 shadow-sm">
       {/* Header with title and rating */}
       <div className="flex items-center justify-between p-4 border-b bg-slate-50 dark:bg-slate-900">
         <div className="flex items-center gap-2 min-w-0 flex-1">

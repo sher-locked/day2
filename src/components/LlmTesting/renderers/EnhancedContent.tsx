@@ -64,7 +64,7 @@ function SummarySkeleton() {
 
 function AnalysisSkeleton() {
   return (
-    <div className="mb-6 border rounded-lg overflow-hidden bg-white dark:bg-slate-950 shadow-sm animate-pulse">
+    <div className="mb-6 border rounded-lg bg-white dark:bg-slate-950 shadow-sm animate-pulse">
       <div className="flex items-center justify-between p-4 border-b bg-slate-50 dark:bg-slate-900">
         <div className="flex items-center gap-2">
           <Skeleton className="h-5 w-5 rounded-full" />
@@ -269,7 +269,7 @@ export function EnhancedContent({ parsedContent, stage = 'complete', rawContent 
     if (stage === 'connecting' || stage === 'thinking') {
       // Show initial loading skeleton
       return (
-        <div className="p-4 space-y-4 overflow-hidden">
+        <div className="p-4 space-y-4">
           <div className="flex items-center space-x-2 mb-6">
             <div className="h-4 w-4 bg-blue-500 rounded-full animate-pulse"></div>
             <p className="text-slate-500 dark:text-slate-400 animate-pulse">
@@ -285,7 +285,7 @@ export function EnhancedContent({ parsedContent, stage = 'complete', rawContent 
     if (stage === 'streaming') {
       // Show progressive skeletons
       return (
-        <div className="p-4 space-y-4 overflow-hidden">
+        <div className="p-4 space-y-4">
           <div className="flex items-center space-x-2 mb-6">
             <div className="h-4 w-4 bg-purple-500 rounded-full animate-pulse"></div>
             <p className="text-slate-500 dark:text-slate-400">
@@ -353,7 +353,7 @@ export function EnhancedContent({ parsedContent, stage = 'complete', rawContent 
 
   // Progressive rendering with fade-in animations for each section
   return (
-    <div className="p-4 space-y-4 overflow-hidden">
+    <div className="p-4 space-y-4">
       {/* Summary Dashboard - either show component or skeleton */}
       {displayContent.summaryDashboard ? (
         <div className={`transition-opacity duration-500 ${hasSummary ? 'opacity-100' : 'opacity-0'}`}>

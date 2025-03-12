@@ -79,215 +79,130 @@ export function ThinkingIndicator({
     return () => clearInterval(timer);
   }, [startTime, stage, finalElapsedTime]);
 
-  // Format the time display
-  const timeDisplay = finalElapsedTime !== null ? formatTime(finalElapsedTime) : formatTime(elapsedTime);
-
-  // Get token count from actual data or estimate
-  const tokenCount = usageData ? usageData.total_tokens || 0 : approximateTokens;
+  // Determine the appropriate icon, color, and message based on stage
+  let icon = null;
+  let statusColor = '';
+  let cardBorderColor = '';
+  let statusMessage = '';
+  let pulseAnimation = '';
   
-  // Format token display to prevent overflow
-  const tokenDisplay = abbreviateNumber(tokenCount);
+  switch(stage) {
+    case 'connecting':
+      icon = (
+        <svg className="animate-spin mr-2 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      );
+      statusColor = 'text-primary';
+      cardBorderColor = 'border-primary/30';
+      statusMessage = 'Connecting to model...';
+      pulseAnimation = 'animate-pulse';
+      break;
+    case 'thinking':
+      icon = (
+        <svg className="mr-2 h-5 w-5 text-amber-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"></path>
+        </svg>
+      );
+      statusColor = 'text-amber-500';
+      cardBorderColor = 'border-amber-200 dark:border-amber-800';
+      statusMessage = 'Model is thinking...';
+      pulseAnimation = 'animate-pulse';
+      break;
+    case 'streaming':
+      icon = (
+        <svg className="mr-2 h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+        </svg>
+      );
+      statusColor = 'text-green-500';
+      cardBorderColor = 'border-green-200 dark:border-green-800';
+      statusMessage = 'Receiving response...';
+      break;
+    case 'complete':
+      icon = (
+        <svg className="mr-2 h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+        </svg>
+      );
+      statusColor = 'text-green-600';
+      cardBorderColor = 'border-green-200 dark:border-green-800';
+      statusMessage = 'Analysis complete';
+      break;
+    case 'error':
+      icon = (
+        <svg className="mr-2 h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"></path>
+        </svg>
+      );
+      statusColor = 'text-red-500';
+      cardBorderColor = 'border-red-200 dark:border-red-800';
+      statusMessage = 'Error processing request';
+      break;
+  }
 
   return (
-    <Card className="shadow-md bg-slate-50 dark:bg-slate-900 dark:border-slate-800 overflow-hidden">
-      <div className="relative h-2 w-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-        <div 
-          className={`absolute h-full transition-all duration-500 ${
-            stage === 'connecting' ? 'w-[15%] bg-blue-500' :
-            stage === 'thinking' ? 'w-[45%] bg-amber-500' :
-            stage === 'streaming' ? 'w-[75%] bg-purple-500' :
-            stage === 'complete' ? 'w-full bg-green-500' :
-            'w-full bg-red-500'
-          }`}
-        />
-      </div>
-      
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium flex items-center gap-2">
-            <span>Model:</span> 
-            <Badge variant="outline" className="font-mono text-xs py-1">
-              {model}
-            </Badge>
-          </h3>
-          
-          <div className="flex gap-4">
-            {/* Time Metric with Enhanced Visual */}
-            <div className={`flex flex-col items-center border rounded-lg p-2 min-w-[90px] ${
-              stage === 'complete' ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' :
-              elapsedTime > 10 ? 'bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800' : 
-              'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-            }`}>
-              <span className="text-xs text-slate-500 dark:text-slate-400 mb-1">Time</span>
-              <span className={`font-bold ${
-                stage === 'complete' ? 'text-green-600 dark:text-green-400' :
-                elapsedTime > 10 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'
-              }`}>
-                {timeDisplay}
+    <Card className={`overflow-hidden border ${cardBorderColor}`}>
+      <CardContent className="p-0">
+        <div className={`bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-4 ${pulseAnimation}`}>
+          <div className="flex items-center">
+            {icon}
+            <h3 className={`text-lg font-medium ${statusColor}`}>{statusMessage}</h3>
+          </div>
+        </div>
+        
+        <div className="p-4 space-y-3">
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center">
+              <span className="text-slate-500 dark:text-slate-400 text-sm mr-2">Model:</span>
+              <Badge variant="outline" className="font-semibold">
+                {model}
+              </Badge>
+            </div>
+            
+            <div className="flex items-center">
+              <span className="text-slate-500 dark:text-slate-400 text-sm mr-2">Processing time:</span>
+              <span className="font-medium text-sm">
+                {finalElapsedTime !== null ? formatTime(finalElapsedTime) : formatTime(elapsedTime)}
               </span>
             </div>
             
-            {/* Token Metric with Enhanced Visual */}
-            {(stage === 'thinking' || stage === 'streaming' || stage === 'complete') && (
-              <div className={`flex flex-col items-center border rounded-lg p-2 min-w-[90px] ${
-                usageData ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' : 
-                'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800'
-              }`}>
-                <span className="text-xs text-slate-500 dark:text-slate-400 mb-1">Tokens</span>
-                <span className={`font-bold truncate max-w-[80px] ${
-                  usageData ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'
-                }`} title={formatNumber(tokenCount)}>
-                  {usageData ? tokenDisplay : `~${tokenDisplay}`}
-                  {!usageData && stage !== 'complete' && (
-                    <span className="inline-flex ml-1">
-                      <span className="animate-pulse">.</span>
-                      <span className="animate-pulse" style={{ animationDelay: '300ms' }}>.</span>
-                      <span className="animate-pulse" style={{ animationDelay: '600ms' }}>.</span>
-                    </span>
-                  )}
+            <div className="flex items-center">
+              <span className="text-slate-500 dark:text-slate-400 text-sm mr-2">Tokens:</span>
+              <span className="font-medium text-sm">
+                {usageData ? abbreviateNumber(usageData.total_tokens || 0) : abbreviateNumber(approximateTokens)}
+              </span>
+            </div>
+            
+            {modelInfo && 'costPer1000Tokens' in modelInfo && (
+              <div className="flex items-center">
+                <span className="text-slate-500 dark:text-slate-400 text-sm mr-2">Est. cost:</span>
+                <span className="font-medium text-sm">
+                  ${((usageData?.total_tokens || approximateTokens) * ((modelInfo as any).costPer1000Tokens / 1000)).toFixed(4)}
                 </span>
               </div>
             )}
           </div>
+          
+          {/* Token usage details when complete */}
+          {stage === 'complete' && usageData && (
+            <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-slate-50 dark:bg-slate-900 p-2 rounded-md">
+                <div className="text-xs text-slate-500 mb-1">Prompt Tokens</div>
+                <div className="font-medium">{formatNumber(usageData.prompt_tokens || 0)}</div>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-900 p-2 rounded-md">
+                <div className="text-xs text-slate-500 mb-1">Completion Tokens</div>
+                <div className="font-medium">{formatNumber(usageData.completion_tokens || 0)}</div>
+              </div>
+              <div className="bg-slate-50 dark:bg-slate-900 p-2 rounded-md">
+                <div className="text-xs text-slate-500 mb-1">Total Tokens</div>
+                <div className="font-medium">{formatNumber(usageData.total_tokens || 0)}</div>
+              </div>
+            </div>
+          )}
         </div>
-        
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-              stage === 'connecting' || stage === 'thinking' || stage === 'streaming' || stage === 'complete' 
-                ? 'bg-green-500 text-white' 
-                : 'bg-slate-300 dark:bg-slate-700'
-            }`}>
-              {(stage === 'connecting' || stage === 'thinking' || stage === 'streaming' || stage === 'complete') && 
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3 h-3">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              }
-            </div>
-            <div className="text-sm font-medium">API Connection Established</div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-              stage === 'thinking' || stage === 'streaming' || stage === 'complete' 
-                ? 'bg-green-500 text-white' 
-                : stage === 'connecting' 
-                  ? 'bg-blue-500 text-white relative' 
-                  : 'bg-slate-300 dark:bg-slate-700'
-            }`}>
-              {stage === 'connecting' && (
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <span className="animate-ping absolute w-3 h-3 rounded-full bg-blue-300 opacity-75"></span>
-                  <span className="relative block w-2 h-2 rounded-full bg-blue-500"></span>
-                </span>
-              )}
-              {(stage === 'thinking' || stage === 'streaming' || stage === 'complete') && 
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3 h-3">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              }
-            </div>
-            <div className="flex items-center gap-2 text-sm font-medium">
-              Model Thinking
-              {stage === 'thinking' && (
-                <div className="relative h-5 w-5">
-                  <div className="absolute inset-0 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-              stage === 'streaming' || stage === 'complete' 
-                ? 'bg-green-500 text-white' 
-                : stage === 'thinking' 
-                  ? 'bg-amber-500 text-white relative' 
-                  : 'bg-slate-300 dark:bg-slate-700'
-            }`}>
-              {stage === 'thinking' && (
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <span className="animate-ping absolute w-3 h-3 rounded-full bg-amber-300 opacity-75"></span>
-                  <span className="relative block w-2 h-2 rounded-full bg-amber-500"></span>
-                </span>
-              )}
-              {(stage === 'streaming' || stage === 'complete') && 
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3 h-3">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              }
-            </div>
-            <div className="flex items-center gap-2 text-sm font-medium">
-              Receiving Response
-              {stage === 'streaming' && (
-                <div className="flex space-x-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse"></div>
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" style={{ animationDelay: '300ms' }}></div>
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" style={{ animationDelay: '600ms' }}></div>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-              stage === 'complete' 
-                ? 'bg-green-500 text-white' 
-                : stage === 'error' 
-                  ? 'bg-red-500 text-white' 
-                  : stage === 'streaming' 
-                    ? 'bg-purple-500 text-white relative' 
-                    : 'bg-slate-300 dark:bg-slate-700'
-            }`}>
-              {stage === 'streaming' && (
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <span className="animate-ping absolute w-3 h-3 rounded-full bg-purple-300 opacity-75"></span>
-                  <span className="relative block w-2 h-2 rounded-full bg-purple-500"></span>
-                </span>
-              )}
-              {stage === 'complete' && 
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3 h-3">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              }
-              {stage === 'error' && 
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-3 h-3">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              }
-            </div>
-            <div className="text-sm font-medium">
-              {stage === 'complete' ? 'Response Complete' : stage === 'error' ? 'Error Encountered' : 'Awaiting Completion'}
-            </div>
-          </div>
-        </div>
-        
-        {/* Completion summary for 'complete' stage */}
-        {stage === 'complete' && usageData && (
-          <div className="mt-4 text-sm text-slate-600 dark:text-slate-400 bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-800">
-            <div className="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4 text-green-500">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <p>
-                Response completed in <span className="font-medium">{timeDisplay}</span> with{' '}
-                <span className="font-medium">{formatNumber(usageData.total_tokens || 0)}</span> tokens used.
-              </p>
-            </div>
-          </div>
-        )}
-        
-        {/* Add token usage summary during streaming/thinking */}
-        {stage === 'streaming' && (
-          <div className="mt-4 text-sm text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 p-3 rounded border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4 text-blue-500">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p>Streaming response in real-time. Token usage and cost will be calculated when complete.</p>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
