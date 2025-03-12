@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Star, Stars, AlertTriangle, BookOpen, Brain } from 'lucide-react';
+import { Star, Stars, AlertTriangle } from 'lucide-react';
 
 type RatingIndicatorProps = {
   rating: string | undefined;
@@ -43,22 +43,12 @@ export function RatingIndicator({
       icon = <Star className="stroke-gray-600 dark:stroke-gray-400" />;
   }
 
-  // Type-specific icons for storytelling and reasoning
-  if (type === 'storytelling') {
-    icon = <BookOpen className={cn("mr-1.5", 
-      lowerRating === 'strong' || lowerRating === 'great' ? "stroke-green-600 dark:stroke-green-500" :
-      lowerRating === 'good' ? "stroke-yellow-600 dark:stroke-yellow-500" :
-      lowerRating === 'weak' ? "stroke-red-600 dark:stroke-red-500" :
-      "stroke-gray-600 dark:stroke-gray-400"
-    )} />;
-  } else if (type === 'reasoning') {
-    icon = <Brain className={cn("mr-1.5", 
-      lowerRating === 'strong' || lowerRating === 'great' ? "stroke-green-600 dark:stroke-green-500" :
-      lowerRating === 'good' ? "stroke-yellow-600 dark:stroke-yellow-500" :
-      lowerRating === 'weak' ? "stroke-red-600 dark:stroke-red-500" :
-      "stroke-gray-600 dark:stroke-gray-400"
-    )} />;
-  }
+  // Type-specific color adjustments but without duplicating icons
+  const colorClass = 
+    lowerRating === 'strong' || lowerRating === 'great' ? "stroke-green-600 dark:stroke-green-500" :
+    lowerRating === 'good' ? "stroke-yellow-600 dark:stroke-yellow-500" :
+    lowerRating === 'weak' ? "stroke-red-600 dark:stroke-red-500" :
+    "stroke-gray-600 dark:stroke-gray-400";
 
   // Size classes
   const sizeClasses = {
