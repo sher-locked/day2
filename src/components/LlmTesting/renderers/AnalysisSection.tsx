@@ -66,7 +66,7 @@ export function AnalysisSection({ title, analysisData }: AnalysisSectionProps) {
                 )}
                 
                 {nestedValue.feedback && (
-                  <div className="text-xs italic bg-slate-50 dark:bg-slate-900 p-3 rounded-md border border-slate-100 dark:border-slate-800 break-words">
+                  <div className="text-xs italic text-slate-600 dark:text-slate-400 pl-1 border-l-2 border-slate-300 dark:border-slate-700 mt-2 break-words">
                     {nestedValue.feedback}
                   </div>
                 )}
@@ -78,7 +78,7 @@ export function AnalysisSection({ title, analysisData }: AnalysisSectionProps) {
         })}
         
         {analysisData.topSuggestion && (
-          <div className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 p-3 rounded-md border border-blue-100 dark:border-blue-900 text-sm break-words">
+          <div className="mt-4 text-sm text-blue-700 dark:text-blue-300 pl-1 border-l-2 border-blue-400 dark:border-blue-600 break-words">
             <span className="font-medium">Top suggestion: </span>
             {analysisData.topSuggestion}
           </div>
