@@ -205,80 +205,99 @@ export function ModelSelector({
             )}
           </div>
           
-          {/* OpenAI Models Section */}
-          <div className="px-2 py-1.5 my-1 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 rounded-md">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center">
-                <Image 
-                  src="/images/openai-icon.png" 
-                  alt="OpenAI" 
-                  width={20} 
-                  height={20} 
-                  className="mr-2"
-                />
-                <span className="font-bold text-emerald-800 dark:text-emerald-300">OpenAI Models</span>
+          {/* OpenAI Models Section - Only show if there are models available */}
+          {(openaiGpt4Models.length > 0 || openaiGpt35Models.length > 0) && (
+            <div className="px-2 py-1.5 my-1 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950 dark:to-emerald-900 rounded-md">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center">
+                  <Image 
+                    src="/images/openai-icon.png" 
+                    alt="OpenAI" 
+                    width={20} 
+                    height={20} 
+                    className="mr-2"
+                  />
+                  <span className="font-bold text-emerald-800 dark:text-emerald-300">OpenAI Models</span>
+                </div>
+                
+                {/* API key status indicator */}
+                <div className={`text-xs px-2 py-0.5 rounded-full ${
+                  apiKeyStatus.openai 
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                    : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                }`}>
+                  {apiKeyStatus.openai ? 'API Key ✓' : 'No API Key ✗'}
+                </div>
               </div>
               
-              {/* API key status indicator */}
-              <div className={`text-xs px-2 py-0.5 rounded-full ${
-                apiKeyStatus.openai 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-              }`}>
-                {apiKeyStatus.openai ? 'API Key ✓' : 'No API Key ✗'}
+              {/* GPT-4 Models */}
+              {openaiGpt4Models.length > 0 && (
+                <SelectGroup>
+                  <SelectLabel className="flex items-center text-emerald-600 dark:text-emerald-400 font-semibold">
+                    <Image 
+                      src="/images/gpt4-icon.png" 
+                      alt="GPT-4" 
+                      width={16} 
+                      height={16} 
+                      className="mr-1.5 opacity-80"
+                    />
+                    GPT-4 Models
+                  </SelectLabel>
+                  {openaiGpt4Models.map((model) => (
+                    <SelectItem 
+                      key={model.value} 
+                      value={model.value}
+                      className="ml-6 border-l-2 border-emerald-200 dark:border-emerald-800 pl-2"
+                    >
+                      {model.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
+              
+              {/* GPT-3.5 Models */}
+              {openaiGpt35Models.length > 0 && (
+                <SelectGroup className="mt-2">
+                  <SelectLabel className="flex items-center text-emerald-600 dark:text-emerald-400 font-semibold">
+                    <Image 
+                      src="/images/gpt35-icon.png" 
+                      alt="GPT-3.5" 
+                      width={16} 
+                      height={16} 
+                      className="mr-1.5 opacity-80"
+                    />
+                    GPT-3.5 Models
+                  </SelectLabel>
+                  {openaiGpt35Models.map((model) => (
+                    <SelectItem 
+                      key={model.value} 
+                      value={model.value}
+                      className="ml-6 border-l-2 border-emerald-200 dark:border-emerald-800 pl-2"
+                    >
+                      {model.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              )}
+            </div>
+          )}
+          
+          {/* Message when no OpenAI models are available */}
+          {openaiGpt4Models.length === 0 && openaiGpt35Models.length === 0 && apiKeyStatus.openai && (
+            <div className="px-4 py-3 my-2 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
+              <div className="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300">OpenAI Models Unavailable</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                    OpenAI models are currently disabled in this application. Please use the available Anthropic Claude models for your text analysis.
+                  </p>
+                </div>
               </div>
             </div>
-            
-            {/* GPT-4 Models */}
-            {openaiGpt4Models.length > 0 && (
-              <SelectGroup>
-                <SelectLabel className="flex items-center text-emerald-600 dark:text-emerald-400 font-semibold">
-                  <Image 
-                    src="/images/gpt4-icon.png" 
-                    alt="GPT-4" 
-                    width={16} 
-                    height={16} 
-                    className="mr-1.5 opacity-80"
-                  />
-                  GPT-4 Models
-                </SelectLabel>
-                {openaiGpt4Models.map((model) => (
-                  <SelectItem 
-                    key={model.value} 
-                    value={model.value}
-                    className="ml-6 border-l-2 border-emerald-200 dark:border-emerald-800 pl-2"
-                  >
-                    {model.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            )}
-            
-            {/* GPT-3.5 Models */}
-            {openaiGpt35Models.length > 0 && (
-              <SelectGroup className="mt-2">
-                <SelectLabel className="flex items-center text-emerald-600 dark:text-emerald-400 font-semibold">
-                  <Image 
-                    src="/images/gpt35-icon.png" 
-                    alt="GPT-3.5" 
-                    width={16} 
-                    height={16} 
-                    className="mr-1.5 opacity-80"
-                  />
-                  GPT-3.5 Models
-                </SelectLabel>
-                {openaiGpt35Models.map((model) => (
-                  <SelectItem 
-                    key={model.value} 
-                    value={model.value}
-                    className="ml-6 border-l-2 border-emerald-200 dark:border-emerald-800 pl-2"
-                  >
-                    {model.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            )}
-          </div>
+          )}
           
           {/* Legacy Models - collapsed by default */}
           {legacyModels.length > 0 && (

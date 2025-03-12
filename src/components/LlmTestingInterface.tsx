@@ -93,7 +93,13 @@ export function LlmTestingInterface() {
   // State for form inputs
   const [userPrompt, setUserPrompt] = useState('');
   const [productPrompt, setProductPrompt] = useState(DEFAULT_PRODUCT_PROMPT);
-  const [selectedModel, setSelectedModel] = useState(availableModels[0]?.value || 'gpt-4');
+  const [selectedModel, setSelectedModel] = useState(
+    // Try to get the GPT-4o model first, otherwise fall back to the first available model
+    availableModels.find(model => model.value === 'gpt-4o')?.value || 
+    availableModels.find(model => model.provider === 'openai')?.value || 
+    availableModels[0]?.value || 
+    'claude-3-haiku-20240307'
+  );
   const [startTime, setStartTime] = useState(Date.now());
   const [estimatedTokensForInput, setEstimatedTokensForInput] = useState(0);
   
@@ -173,7 +179,7 @@ export function LlmTestingInterface() {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Communication Enhancement Analyzer</h1>
+        <h1 className="text-2xl font-bold">AI-Powered Communication Enhancement Analyzer</h1>
       </div>
       
       <Tabs defaultValue="user-mode" className="w-full">

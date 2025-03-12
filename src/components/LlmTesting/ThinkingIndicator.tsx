@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { formatTime, formatNumber } from '@/lib/utils/formatters';
-import { ModelInfo } from '@/lib/constants/modelInfo';
+import { ModelInfo } from '@/app/api/llm-test/types';
 import { UsageData } from '@/lib/utils/tokenCalculation';
 
 type ThinkingIndicatorProps = { 

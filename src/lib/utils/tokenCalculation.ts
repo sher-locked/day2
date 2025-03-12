@@ -1,4 +1,4 @@
-import { ModelInfo } from '../constants/modelInfo';
+import { ModelInfo } from '../../app/api/llm-test/types';
 
 export type TokenUsage = {
   prompt_tokens: number;

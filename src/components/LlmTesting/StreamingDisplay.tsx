@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency, formatNumber } from '@/lib/utils/formatters';
-import { ModelInfo } from '@/lib/constants/modelInfo';
+import { ModelInfo } from '@/app/api/llm-test/types';
 import { UsageData, CostData } from '@/lib/utils/tokenCalculation';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
