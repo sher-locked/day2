@@ -13,6 +13,17 @@ type ThinkingIndicatorProps = {
   modelInfo?: ModelInfo | null;
 };
 
+// Helper function to abbreviate large numbers with K/M suffix
+function abbreviateNumber(num: number): string {
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`;
+  } else if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}K`;
+  } else {
+    return formatNumber(num);
+  }
+}
+
 export function ThinkingIndicator({ 
   stage, 
   model, 
@@ -22,6 +33,7 @@ export function ThinkingIndicator({
 }: ThinkingIndicatorProps) {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [approximateTokens, setApproximateTokens] = useState(0);
+  const [finalElapsedTime, setFinalElapsedTime] = useState<number | null>(null);
 
   // Increment tokens roughly by 5-15 tokens every second during thinking/streaming
   useEffect(() => {
@@ -49,12 +61,32 @@ export function ThinkingIndicator({
 
   // Track elapsed time
   useEffect(() => {
+    // If we're in 'complete' stage and don't have a final time yet, set it
+    if ((stage === 'complete' || stage === 'error') && finalElapsedTime === null) {
+      setFinalElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+      return;
+    }
+    
+    // Don't update elapsed time if we're complete or have an error
+    if (stage === 'complete' || stage === 'error') {
+      return;
+    }
+    
     const timer = setInterval(() => {
       setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [startTime]);
+  }, [startTime, stage, finalElapsedTime]);
+
+  // Format the time display
+  const timeDisplay = finalElapsedTime !== null ? formatTime(finalElapsedTime) : formatTime(elapsedTime);
+
+  // Get token count from actual data or estimate
+  const tokenCount = usageData ? usageData.total_tokens || 0 : approximateTokens;
+  
+  // Format token display to prevent overflow
+  const tokenDisplay = abbreviateNumber(tokenCount);
 
   return (
     <Card className="shadow-md bg-slate-50 dark:bg-slate-900 dark:border-slate-800 overflow-hidden">
@@ -81,29 +113,31 @@ export function ThinkingIndicator({
           
           <div className="flex gap-4">
             {/* Time Metric with Enhanced Visual */}
-            <div className={`flex flex-col items-center border rounded-lg p-2 ${
+            <div className={`flex flex-col items-center border rounded-lg p-2 min-w-[90px] ${
+              stage === 'complete' ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' :
               elapsedTime > 10 ? 'bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800' : 
               'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
             }`}>
               <span className="text-xs text-slate-500 dark:text-slate-400 mb-1">Time</span>
               <span className={`font-bold ${
+                stage === 'complete' ? 'text-green-600 dark:text-green-400' :
                 elapsedTime > 10 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'
               }`}>
-                {formatTime(elapsedTime)}
+                {timeDisplay}
               </span>
             </div>
             
             {/* Token Metric with Enhanced Visual */}
             {(stage === 'thinking' || stage === 'streaming' || stage === 'complete') && (
-              <div className={`flex flex-col items-center border rounded-lg p-2 ${
+              <div className={`flex flex-col items-center border rounded-lg p-2 min-w-[90px] ${
                 usageData ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' : 
                 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800'
               }`}>
                 <span className="text-xs text-slate-500 dark:text-slate-400 mb-1">Tokens</span>
-                <span className={`font-bold ${
+                <span className={`font-bold truncate max-w-[80px] ${
                   usageData ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400'
-                }`}>
-                  {usageData ? formatNumber(usageData.total_tokens) : `~${formatNumber(approximateTokens)}`}
+                }`} title={formatNumber(tokenCount)}>
+                  {usageData ? tokenDisplay : `~${tokenDisplay}`}
                   {!usageData && stage !== 'complete' && (
                     <span className="inline-flex ml-1">
                       <span className="animate-pulse">.</span>
@@ -227,6 +261,21 @@ export function ThinkingIndicator({
             </div>
           </div>
         </div>
+        
+        {/* Completion summary for 'complete' stage */}
+        {stage === 'complete' && usageData && (
+          <div className="mt-4 text-sm text-slate-600 dark:text-slate-400 bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4 text-green-500">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <p>
+                Response completed in <span className="font-medium">{timeDisplay}</span> with{' '}
+                <span className="font-medium">{formatNumber(usageData.total_tokens || 0)}</span> tokens used.
+              </p>
+            </div>
+          </div>
+        )}
         
         {/* Add token usage summary during streaming/thinking */}
         {stage === 'streaming' && (
