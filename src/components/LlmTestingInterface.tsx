@@ -414,6 +414,16 @@ export function LlmTestingInterface() {
                     modelInfo={modelInfo}
                   />
                   
+                  {/* StreamingDisplay for Dev Mode */}
+                  <StreamingDisplay 
+                    content={content}
+                    model={selectedModel}
+                    response={responseData}
+                    usageData={usageData}
+                    modelInfo={modelInfo}
+                    mode="dev"
+                  />
+                  
                   {/* Raw response data */}
                   <Card>
                     <CardContent className="pt-6 space-y-4">

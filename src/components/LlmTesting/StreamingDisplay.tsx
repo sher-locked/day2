@@ -128,6 +128,7 @@ export function StreamingDisplay({
   const [inrCostData, setInrCostData] = useState<CostData | null>(null);
   const [displayMode, setDisplayMode] = useState<'json' | 'pretty'>('pretty');
   const [parsedContent, setParsedContent] = useState<Record<string, any> | null>(null);
+  const [stage, setStage] = useState<'connecting' | 'thinking' | 'streaming' | 'complete' | 'error'>('thinking');
     
   // Update token information when usage data changes
   useEffect(() => {
@@ -141,27 +142,43 @@ export function StreamingDisplay({
       // Set cost data from usageData
       setUsdCostData(usageData.cost_usd || null);
       setInrCostData(usageData.cost_inr || null);
+      
+      // Mark as complete when we have usage data
+      setStage('complete');
     }
   }, [usageData]);
 
   // Try to parse the content as JSON for pretty display
   useEffect(() => {
-    if (content) {
-      try {
-        // Only attempt to parse if content looks like JSON
-        if (content.trim().startsWith('{') || content.trim().startsWith('[')) {
-          const parsed = JSON.parse(content);
-          setParsedContent(parsed);
-        }
-      } catch (error) {
-        // If parsing fails, don't update parsedContent
-        // This allows partial JSON to be displayed in the raw view
-        // while waiting for the complete JSON to be received
-      }
-    } else {
+    if (!content) {
       setParsedContent(null);
+      setStage('thinking');
+      return;
     }
-  }, [content]);
+    
+    // Mark as streaming while receiving content
+    setStage('streaming');
+    
+    try {
+      // Only attempt to parse if content looks like JSON
+      if (content.trim().startsWith('{') || content.trim().startsWith('[')) {
+        const parsed = JSON.parse(content);
+        setParsedContent(parsed);
+        
+        // If we have parsed content but no usage data yet, we're still streaming
+        if (!usageData) {
+          setStage('streaming');
+        } else {
+          setStage('complete');
+        }
+      }
+    } catch (error) {
+      // If parsing fails, don't update parsedContent
+      // This allows partial JSON to be displayed in the raw view
+      // while waiting for the complete JSON to be received
+      setStage('streaming'); // Still streaming if parsing fails
+    }
+  }, [content, usageData]);
 
   // Auto-scroll to bottom as content updates
   useEffect(() => {
@@ -465,6 +482,57 @@ export function StreamingDisplay({
     );
   };
   
+  // User mode display with enhanced UI
+  if (mode === 'user') {
+    return (
+      <div>
+        <div className="mb-4">
+          {/* Remove Raw JSON tab and only show Enhanced View */}
+          <Card className="shadow-sm">
+            <CardContent className="p-0">
+              <div ref={prettyDisplayRef} className="overflow-auto max-h-[70vh]">
+                <EnhancedContent parsedContent={parsedContent} stage={stage} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Usage information in a more compact format for user mode */}
+        {usageData && (
+          <Card className="shadow-sm bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+            <CardContent className="p-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium text-slate-700 dark:text-slate-300">Model:</span>
+                  <CustomBadge size="sm">{model}</CustomBadge>
+                </div>
+                
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium text-slate-700 dark:text-slate-300">Tokens:</span>
+                  <span className="text-slate-900 dark:text-slate-100">{formatNumber(tokenDetails.totalTokens)}</span>
+                </div>
+                
+                {/* Cost Display - Both USD and INR */}
+                {usdCostData && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium text-slate-700 dark:text-slate-300">Cost:</span>
+                    <span className="text-green-600 dark:text-green-400">{formatCurrency(usdCostData.total, 'USD')}</span>
+                    {inrCostData && (
+                      <span className="text-green-600 dark:text-green-400">
+                        ({formatCurrency(inrCostData.total, 'INR')})
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
+  
+  // Developer mode display (original)
   return (
     <div className="flex flex-col space-y-4">
       <Card className="overflow-hidden">
@@ -508,7 +576,7 @@ export function StreamingDisplay({
               {!content ? (
                 <div className="text-slate-400 italic p-4">Response will appear here...</div>
               ) : (
-                <EnhancedContent parsedContent={parsedContent} />
+                <EnhancedContent parsedContent={parsedContent} stage={stage} />
               )}
             </div>
           )}
