@@ -1,5 +1,5 @@
 import { RatingIndicator } from "../ui/RatingIndicator";
-import { BookOpen, Brain, Target } from "lucide-react";
+import { BookOpen, Brain, Target, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type SummaryDashboardProps = {
@@ -49,8 +49,11 @@ export function SummaryDashboard({ summaryData }: SummaryDashboardProps) {
             <div className="flex-1">
               <h3 className="text-lg font-medium mb-2">Priority Focus</h3>
               <div className="mt-1">
-                <div className="flex items-center mb-1">
-                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400 mr-2">Focus Point</span>
+                <div className="flex items-center mb-2">
+                  <div className="flex items-center bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded mr-2">
+                    <Lightbulb className="h-3.5 w-3.5 mr-1" />
+                    <span className="text-xs font-medium uppercase tracking-wide">Focus Point</span>
+                  </div>
                   <div className="h-px flex-grow bg-blue-100 dark:bg-blue-900"></div>
                 </div>
                 <div className="text-sm text-blue-700 dark:text-blue-300 pl-1 border-l-2 border-blue-400 dark:border-blue-600 break-words">
