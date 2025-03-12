@@ -60,14 +60,26 @@ export function AnalysisSection({ title, analysisData }: AnalysisSectionProps) {
                 </div>
                 
                 {nestedValue.content && (
-                  <div className="mb-2 text-slate-700 dark:text-slate-300 text-sm break-words">
-                    {nestedValue.content}
+                  <div className="mb-3">
+                    <div className="flex items-center mb-1">
+                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mr-2">Content</span>
+                      <div className="h-px flex-grow bg-slate-100 dark:bg-slate-800"></div>
+                    </div>
+                    <div className="text-slate-700 dark:text-slate-300 text-sm break-words">
+                      {nestedValue.content}
+                    </div>
                   </div>
                 )}
                 
                 {nestedValue.feedback && (
-                  <div className="text-xs italic text-slate-600 dark:text-slate-400 pl-1 border-l-2 border-slate-300 dark:border-slate-700 mt-2 break-words">
-                    {nestedValue.feedback}
+                  <div className="mt-3">
+                    <div className="flex items-center mb-1">
+                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mr-2">Feedback</span>
+                      <div className="h-px flex-grow bg-slate-100 dark:bg-slate-800"></div>
+                    </div>
+                    <div className="text-xs text-slate-600 dark:text-slate-400 pl-1 border-l-2 border-slate-300 dark:border-slate-700 break-words">
+                      {nestedValue.feedback}
+                    </div>
                   </div>
                 )}
               </div>
@@ -78,9 +90,14 @@ export function AnalysisSection({ title, analysisData }: AnalysisSectionProps) {
         })}
         
         {analysisData.topSuggestion && (
-          <div className="mt-4 text-sm text-blue-700 dark:text-blue-300 pl-1 border-l-2 border-blue-400 dark:border-blue-600 break-words">
-            <span className="font-medium">Top suggestion: </span>
-            {analysisData.topSuggestion}
+          <div className="mt-4">
+            <div className="flex items-center mb-1">
+              <span className="text-xs font-medium text-blue-600 dark:text-blue-400 mr-2">Suggestion</span>
+              <div className="h-px flex-grow bg-blue-100 dark:bg-blue-900"></div>
+            </div>
+            <div className="text-sm text-blue-700 dark:text-blue-300 pl-1 border-l-2 border-blue-400 dark:border-blue-600 break-words">
+              {analysisData.topSuggestion}
+            </div>
           </div>
         )}
       </div>

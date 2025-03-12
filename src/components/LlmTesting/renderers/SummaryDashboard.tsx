@@ -48,8 +48,14 @@ export function SummaryDashboard({ summaryData }: SummaryDashboardProps) {
             <Target className="text-primary h-6 w-6 flex-shrink-0 mt-1" />
             <div className="flex-1">
               <h3 className="text-lg font-medium mb-2">Priority Focus</h3>
-              <div className="text-sm text-blue-700 dark:text-blue-300 pl-1 border-l-2 border-blue-400 dark:border-blue-600 break-words">
-                {summaryData.priorityFocus}
+              <div className="mt-1">
+                <div className="flex items-center mb-1">
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400 mr-2">Focus Point</span>
+                  <div className="h-px flex-grow bg-blue-100 dark:bg-blue-900"></div>
+                </div>
+                <div className="text-sm text-blue-700 dark:text-blue-300 pl-1 border-l-2 border-blue-400 dark:border-blue-600 break-words">
+                  {summaryData.priorityFocus}
+                </div>
               </div>
             </div>
           </div>
