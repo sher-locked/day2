@@ -490,7 +490,7 @@ export function StreamingDisplay({
           {/* Remove Raw JSON tab and only show Enhanced View */}
           <Card className="shadow-sm">
             <CardContent className="p-0">
-              <div ref={prettyDisplayRef} className="overflow-auto max-h-[70vh]">
+              <div ref={prettyDisplayRef}>
                 <EnhancedContent parsedContent={parsedContent} stage={stage} />
               </div>
             </CardContent>
@@ -571,7 +571,7 @@ export function StreamingDisplay({
           ) : (
             <div 
               ref={prettyDisplayRef}
-              className="max-h-[500px] overflow-y-auto font-sans text-sm"
+              className="font-sans text-sm"
             >
               {!content ? (
                 <div className="text-slate-400 italic p-4">Response will appear here...</div>
