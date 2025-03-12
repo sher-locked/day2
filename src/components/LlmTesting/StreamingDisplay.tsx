@@ -576,7 +576,11 @@ export function StreamingDisplay({
               {!content ? (
                 <div className="text-slate-400 italic p-4">Response will appear here...</div>
               ) : (
-                <EnhancedContent parsedContent={parsedContent} stage={stage} />
+                <EnhancedContent 
+                  parsedContent={parsedContent} 
+                  stage={stage} 
+                  rawContent={content}
+                />
               )}
             </div>
           )}

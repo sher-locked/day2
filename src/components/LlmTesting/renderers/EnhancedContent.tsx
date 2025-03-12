@@ -2,12 +2,13 @@ import { SummaryDashboard } from './SummaryDashboard';
 import { AnalysisSection } from './AnalysisSection';
 import { Notes } from './Notes';
 import { SuggestedImprovements } from './SuggestedImprovements';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '../../../components/ui/skeleton';
 import { useEffect, useState } from 'react';
 
 type EnhancedContentProps = {
   parsedContent: Record<string, any> | null;
   stage?: 'connecting' | 'thinking' | 'streaming' | 'complete' | 'error';
+  rawContent?: string; // Add raw content for partial parsing
 };
 
 // Placeholder skeleton components
@@ -111,18 +112,92 @@ function ImprovementsSkeleton() {
   );
 }
 
+// Function to attempt parsing partial JSON content
+function tryParsePartialJson(content: string): Record<string, any> | null {
+  if (!content || typeof content !== 'string') return null;
+  
+  try {
+    // First try to parse as complete valid JSON
+    if (content.trim().startsWith('{') || content.trim().startsWith('[')) {
+      try {
+        return JSON.parse(content);
+      } catch (e) {
+        // If complete parsing fails, try partial parsing
+      }
+    }
+    
+    // Handle partial JSON by trying to extract valid objects
+    const partial: Record<string, any> = {};
+    
+    // Look for potential complete objects with format: "key": { ... }
+    const objectRegex = /"(\w+)":\s*(\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\})/g;
+    let match;
+    
+    while ((match = objectRegex.exec(content)) !== null) {
+      try {
+        const key = match[1];
+        const value = JSON.parse(match[2]);
+        partial[key] = value;
+      } catch (e) {
+        // Skip invalid matches
+      }
+    }
+    
+    // Look for simple key-value pairs with string values: "key": "value"
+    const stringValueRegex = /"(\w+)":\s*"([^"]*)"/g;
+    while ((match = stringValueRegex.exec(content)) !== null) {
+      const key = match[1];
+      const value = match[2];
+      if (!partial[key]) partial[key] = value;
+    }
+    
+    // Look for simple key-value pairs with numeric values: "key": 123
+    const numericValueRegex = /"(\w+)":\s*(-?\d+(?:\.\d+)?)/g;
+    while ((match = numericValueRegex.exec(content)) !== null) {
+      const key = match[1];
+      const value = parseFloat(match[2]);
+      if (!partial[key]) partial[key] = value;
+    }
+    
+    // Look for simple key-value pairs with boolean values: "key": true|false
+    const booleanValueRegex = /"(\w+)":\s*(true|false)/g;
+    while ((match = booleanValueRegex.exec(content)) !== null) {
+      const key = match[1];
+      const value = match[2] === 'true';
+      if (!partial[key]) partial[key] = value;
+    }
+    
+    return Object.keys(partial).length > 0 ? partial : null;
+  } catch (e) {
+    console.error('Error parsing partial JSON:', e);
+    return null;
+  }
+}
+
 // Main EnhancedContent component
-export function EnhancedContent({ parsedContent, stage = 'complete' }: EnhancedContentProps) {
+export function EnhancedContent({ parsedContent, stage = 'complete', rawContent }: EnhancedContentProps) {
   const [hasSummary, setHasSummary] = useState(false);
   const [hasStorytelling, setHasStorytelling] = useState(false);
   const [hasReasoning, setHasReasoning] = useState(false);
   const [hasNotes, setHasNotes] = useState(false);
   const [hasImprovements, setHasImprovements] = useState(false);
+  const [partialContent, setPartialContent] = useState<Record<string, any> | null>(null);
+  
+  // Try to extract and parse partial content when in streaming mode
+  useEffect(() => {
+    if (stage !== 'streaming' || parsedContent !== null || !rawContent) return;
+    
+    const partial = tryParsePartialJson(rawContent);
+    setPartialContent(partial);
+  }, [rawContent, stage, parsedContent]);
+  
+  // Use either parsed content or partial content
+  const displayContent = parsedContent || partialContent;
   
   // Reset states when parsedContent changes
   useEffect(() => {
-    // Reset all states when parsedContent is null
-    if (!parsedContent) {
+    // Reset all states when parsedContent and partialContent are null
+    if (!displayContent) {
       setHasSummary(false);
       setHasStorytelling(false);
       setHasReasoning(false);
@@ -132,17 +207,17 @@ export function EnhancedContent({ parsedContent, stage = 'complete' }: EnhancedC
     }
     
     // Check if each section is available
-    if (parsedContent.summaryDashboard) setHasSummary(true);
-    if (parsedContent.storytellingAnalysis) setHasStorytelling(true);
-    if (parsedContent.reasoningAnalysis) setHasReasoning(true);
-    if (parsedContent.notes) setHasNotes(true);
-    if (parsedContent.suggestedImprovements) setHasImprovements(true);
-  }, [parsedContent]);
+    if (displayContent.summaryDashboard) setHasSummary(true);
+    if (displayContent.storytellingAnalysis) setHasStorytelling(true);
+    if (displayContent.reasoningAnalysis) setHasReasoning(true);
+    if (displayContent.notes) setHasNotes(true);
+    if (displayContent.suggestedImprovements) setHasImprovements(true);
+  }, [displayContent]);
   
   // Show loading skeletons when in streaming mode with no parsed content or empty object
-  const isEmptyObject = parsedContent && Object.keys(parsedContent).length === 0;
+  const isEmptyObject = displayContent && Object.keys(displayContent).length === 0;
   
-  if (!parsedContent || isEmptyObject) {
+  if (!displayContent || isEmptyObject) {
     if (stage === 'connecting' || stage === 'thinking') {
       // Show initial loading skeleton
       return (
@@ -209,24 +284,43 @@ export function EnhancedContent({ parsedContent, stage = 'complete' }: EnhancedC
     );
   }
 
+  // Add a simple raw text display for streaming partial content when we have raw content
+  // but no structured content has been detected yet
+  if (stage === 'streaming' && rawContent && !displayContent.summaryDashboard && 
+      !displayContent.storytellingAnalysis && !displayContent.reasoningAnalysis) {
+    return (
+      <div className="p-4 space-y-4">
+        <div className="flex items-center space-x-2 mb-2">
+          <div className="h-3 w-3 bg-purple-500 rounded-full animate-pulse"></div>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Building response progressively...
+          </p>
+        </div>
+        <div className="whitespace-pre-wrap p-2 text-sm">
+          {rawContent}
+        </div>
+      </div>
+    );
+  }
+
   // Progressive rendering with fade-in animations for each section
   return (
     <div className="p-4 space-y-4">
       {/* Summary Dashboard - either show component or skeleton */}
-      {parsedContent.summaryDashboard ? (
+      {displayContent.summaryDashboard ? (
         <div className={`transition-opacity duration-500 ${hasSummary ? 'opacity-100' : 'opacity-0'}`}>
-          <SummaryDashboard summaryData={parsedContent.summaryDashboard} />
+          <SummaryDashboard summaryData={displayContent.summaryDashboard} />
         </div>
       ) : stage === 'streaming' && !hasSummary ? (
         <SummarySkeleton />
       ) : null}
       
       {/* Storytelling Analysis */}
-      {parsedContent.storytellingAnalysis ? (
+      {displayContent.storytellingAnalysis ? (
         <div className={`transition-opacity duration-500 ${hasStorytelling ? 'opacity-100' : 'opacity-0'}`}>
           <AnalysisSection 
             title="Storytelling Analysis" 
-            analysisData={parsedContent.storytellingAnalysis} 
+            analysisData={displayContent.storytellingAnalysis} 
           />
         </div>
       ) : stage === 'streaming' && !hasStorytelling && hasSummary ? (
@@ -234,11 +328,11 @@ export function EnhancedContent({ parsedContent, stage = 'complete' }: EnhancedC
       ) : null}
       
       {/* Reasoning Analysis */}
-      {parsedContent.reasoningAnalysis ? (
+      {displayContent.reasoningAnalysis ? (
         <div className={`transition-opacity duration-500 ${hasReasoning ? 'opacity-100' : 'opacity-0'}`}>
           <AnalysisSection 
             title="Reasoning Analysis" 
-            analysisData={parsedContent.reasoningAnalysis} 
+            analysisData={displayContent.reasoningAnalysis} 
           />
         </div>
       ) : stage === 'streaming' && !hasReasoning && hasStorytelling ? (
@@ -246,32 +340,32 @@ export function EnhancedContent({ parsedContent, stage = 'complete' }: EnhancedC
       ) : null}
       
       {/* Notes */}
-      {parsedContent.notes ? (
+      {displayContent.notes ? (
         <div className={`transition-opacity duration-500 ${hasNotes ? 'opacity-100' : 'opacity-0'}`}>
-          <Notes notes={parsedContent.notes} />
+          <Notes notes={displayContent.notes} />
         </div>
-      ) : stage === 'streaming' && !hasNotes && hasReasoning ? (
+      ) : stage === 'streaming' && !hasNotes && (hasReasoning || hasStorytelling) ? (
         <NotesSkeleton />
       ) : null}
       
       {/* Suggested Improvements */}
-      {parsedContent.suggestedImprovements ? (
+      {displayContent.suggestedImprovements ? (
         <div className={`transition-opacity duration-500 ${hasImprovements ? 'opacity-100' : 'opacity-0'}`}>
-          <SuggestedImprovements improvements={parsedContent.suggestedImprovements} />
+          <SuggestedImprovements improvements={displayContent.suggestedImprovements} />
         </div>
       ) : stage === 'streaming' && !hasImprovements && hasNotes ? (
         <ImprovementsSkeleton />
       ) : null}
       
-      {/* If the data is still loading (streaming) but we have some parts, show a loading indicator */}
-      {stage === 'streaming' && Object.keys(parsedContent).length > 0 && Object.keys(parsedContent).length < 5 && (
-        <div className="flex items-center justify-center p-4 text-slate-500 dark:text-slate-400">
-          <div className="flex items-center space-x-2">
-            <div className="relative h-5 w-5">
-              <div className="absolute inset-0 animate-spin rounded-full border-2 border-purple-500 border-t-transparent"></div>
-            </div>
-            <span>Loading additional analysis components...</span>
-          </div>
+      {/* Raw JSON for Debug (Dev Mode) */}
+      {process.env.NODE_ENV === 'development' && stage === 'streaming' && (
+        <div className="mt-8 border-t pt-4">
+          <details className="text-xs">
+            <summary className="cursor-pointer text-slate-500 mb-2">Debug: Detected Partial Content</summary>
+            <pre className="bg-slate-50 dark:bg-slate-900 p-2 rounded overflow-auto max-h-[200px]">
+              {JSON.stringify(displayContent, null, 2)}
+            </pre>
+          </details>
         </div>
       )}
     </div>
